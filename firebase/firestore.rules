@@ -1,0 +1,800 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function userExists(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function userIsActive(userId) {
+      return userExists(userId)
+        && get(/databases/$(database)/documents/users/$(userId)).data.accountState == "active";
+    }
+
+    function callerIsActive() {
+      return signedIn() && userIsActive(request.auth.uid);
+    }
+
+    function relationshipExists(relationshipId) {
+      return exists(/databases/$(database)/documents/relationships/$(relationshipId));
+    }
+
+    function relationshipStatus(relationshipId) {
+      return get(/databases/$(database)/documents/relationships/$(relationshipId)).data.status;
+    }
+
+    function memberPath(relationshipId, userId) {
+      return /databases/$(database)/documents/relationships/$(relationshipId)/members/$(userId);
+    }
+
+    function isMember(relationshipId) {
+      return callerIsActive()
+        && relationshipExists(relationshipId)
+        && exists(memberPath(relationshipId, request.auth.uid))
+        && get(memberPath(relationshipId, request.auth.uid)).data.userId == request.auth.uid;
+    }
+
+    function canReadRelationship(relationshipId) {
+      return isMember(relationshipId)
+        && relationshipStatus(relationshipId) in ["active", "archived"];
+    }
+
+    function canWriteRelationship(relationshipId) {
+      return isMember(relationshipId)
+        && relationshipStatus(relationshipId) == "active";
+    }
+
+    function isServerTimestamp(value) {
+      return value == request.time;
+    }
+
+    function validUserCreate(userId) {
+      return request.resource.data.keys().hasOnly([
+          "displayName",
+          "dateOfBirth",
+          "profileImagePath",
+          "countryCode",
+          "timeZoneId",
+          "locale",
+          "activeRelationshipId",
+          "archivedRelationshipIds",
+          "accountState",
+          "createdAt",
+          "updatedAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.keys().hasAll([
+          "displayName",
+          "dateOfBirth",
+          "profileImagePath",
+          "countryCode",
+          "timeZoneId",
+          "locale",
+          "activeRelationshipId",
+          "archivedRelationshipIds",
+          "accountState",
+          "createdAt",
+          "updatedAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 80
+        && request.resource.data.dateOfBirth is timestamp
+        && (
+          request.resource.data.profileImagePath == null
+          || (
+            request.resource.data.profileImagePath is string
+            && request.resource.data.profileImagePath.matches("^users/" + userId + "/profile/[^/]+$")
+          )
+        )
+        && request.resource.data.countryCode is string
+        && request.resource.data.countryCode.matches("^[A-Z]{2}$")
+        && request.resource.data.timeZoneId is string
+        && request.resource.data.timeZoneId.size() <= 80
+        && request.resource.data.locale in ["en", "uk"]
+        && request.resource.data.activeRelationshipId == null
+        && request.resource.data.archivedRelationshipIds is list
+        && request.resource.data.archivedRelationshipIds.size() == 0
+        && request.resource.data.accountState == "active"
+        && isServerTimestamp(request.resource.data.createdAt)
+        && isServerTimestamp(request.resource.data.updatedAt)
+        && request.resource.data.schemaVersion == 1;
+    }
+
+    function validUserUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "displayName",
+          "profileImagePath",
+          "countryCode",
+          "timeZoneId",
+          "locale",
+          "updatedAt"
+        ])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 80
+        && (
+          request.resource.data.profileImagePath == null
+          || (
+            request.resource.data.profileImagePath is string
+            && request.resource.data.profileImagePath.matches("^users/" + request.auth.uid + "/profile/[^/]+$")
+          )
+        )
+        && request.resource.data.countryCode is string
+        && request.resource.data.countryCode.matches("^[A-Z]{2}$")
+        && request.resource.data.timeZoneId is string
+        && request.resource.data.timeZoneId.size() <= 80
+        && request.resource.data.locale in ["en", "uk"]
+        && isServerTimestamp(request.resource.data.updatedAt);
+    }
+
+    function validPrivatePreferenceCreate(userId) {
+      return request.resource.data.keys().hasOnly([
+          "ownerId",
+          "values",
+          "updatedAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.keys().hasAll([
+          "ownerId",
+          "values",
+          "updatedAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.ownerId == userId
+        && request.resource.data.values is map
+        && isServerTimestamp(request.resource.data.updatedAt)
+        && request.resource.data.schemaVersion == 1;
+    }
+
+    function validPrivateAIMemoryCreate(userId) {
+      return request.resource.data.keys().hasOnly([
+          "ownerId",
+          "fact",
+          "source",
+          "createdAt",
+          "updatedAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.keys().hasAll([
+          "ownerId",
+          "fact",
+          "source",
+          "createdAt",
+          "updatedAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.ownerId == userId
+        && request.resource.data.fact is string
+        && request.resource.data.fact.size() >= 1
+        && request.resource.data.fact.size() <= 2000
+        && request.resource.data.source in ["user", "onDeviceAI"]
+        && isServerTimestamp(request.resource.data.createdAt)
+        && isServerTimestamp(request.resource.data.updatedAt)
+        && request.resource.data.schemaVersion == 1;
+    }
+
+    function validMemberSettings() {
+      return request.resource.data.sharingSettings is map
+        && request.resource.data.sharingSettings.keys().hasOnly([
+          "locationEnabled",
+          "historicalLocationIncluded",
+          "calendarEnabled",
+          "photosEnabled"
+        ])
+        && request.resource.data.sharingSettings.locationEnabled is bool
+        && request.resource.data.sharingSettings.historicalLocationIncluded is bool
+        && request.resource.data.sharingSettings.calendarEnabled is bool
+        && request.resource.data.sharingSettings.photosEnabled is bool
+        && request.resource.data.notificationSettings is map
+        && request.resource.data.notificationSettings.keys().hasOnly([
+          "messagesEnabled",
+          "previewMode"
+        ])
+        && request.resource.data.notificationSettings.messagesEnabled is bool
+        && request.resource.data.notificationSettings.previewMode in ["none", "sender", "full"]
+        && request.resource.data.aiSettings is map
+        && request.resource.data.aiSettings.keys().hasOnly([
+          "sharedAIEnabled",
+          "selectedMessageAnalysisEnabled",
+          "consentVersion"
+        ])
+        && request.resource.data.aiSettings.sharedAIEnabled is bool
+        && request.resource.data.aiSettings.selectedMessageAnalysisEnabled is bool
+        && request.resource.data.aiSettings.consentVersion == 1;
+    }
+
+    function validMemberSelfUpdate(userId) {
+      return request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "sharingSettings",
+          "notificationSettings",
+          "aiSettings",
+          "updatedAt"
+        ])
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.permissions == resource.data.permissions
+        && request.resource.data.joinedAt == resource.data.joinedAt
+        && validMemberSettings()
+        && isServerTimestamp(request.resource.data.updatedAt);
+    }
+
+    function validMessageCreate(relationshipId, messageId) {
+      return request.resource.data.keys().hasOnly([
+          "senderId",
+          "type",
+          "body",
+          "mediaPath",
+          "locationId",
+          "replyToMessageId",
+          "clientMessageId",
+          "createdAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.keys().hasAll([
+          "senderId",
+          "type",
+          "body",
+          "mediaPath",
+          "locationId",
+          "replyToMessageId",
+          "clientMessageId",
+          "createdAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.type in [
+          "text",
+          "photo",
+          "video",
+          "voice",
+          "location",
+          "activity",
+          "aiSuggestion"
+        ]
+        && (
+          request.resource.data.body == null
+          || (
+            request.resource.data.body is string
+            && request.resource.data.body.size() <= 4000
+          )
+        )
+        && (
+          request.resource.data.mediaPath == null
+          || (
+            request.resource.data.mediaPath is string
+            && request.resource.data.mediaPath.matches(
+              "^relationships/" + relationshipId + "/messages/" + messageId + "/[^/]+$"
+            )
+          )
+        )
+        && (
+          request.resource.data.locationId == null
+          || (
+            request.resource.data.locationId is string
+            && request.resource.data.locationId.size() <= 128
+          )
+        )
+        && (
+          request.resource.data.replyToMessageId == null
+          || (
+            request.resource.data.replyToMessageId is string
+            && request.resource.data.replyToMessageId.size() <= 128
+          )
+        )
+        && request.resource.data.clientMessageId is string
+        && request.resource.data.clientMessageId.matches("^[A-Za-z0-9_-]{16,128}$")
+        && (
+          request.resource.data.type != "text"
+          || (
+            request.resource.data.body is string
+            && request.resource.data.body.size() >= 1
+          )
+        )
+        && (
+          !(request.resource.data.type in ["photo", "video", "voice"])
+          || request.resource.data.mediaPath is string
+        )
+        && (
+          request.resource.data.type != "location"
+          || request.resource.data.locationId is string
+        )
+        && isServerTimestamp(request.resource.data.createdAt)
+        && request.resource.data.schemaVersion == 1;
+    }
+
+    function validMessageUpdate() {
+      return resource.data.senderId == request.auth.uid
+        && request.resource.data.senderId == resource.data.senderId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.time < resource.data.createdAt + duration.value(15, "m")
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "body",
+          "editedAt",
+          "deletedAt"
+        ])
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(["editedAt"])
+          || isServerTimestamp(request.resource.data.editedAt)
+        )
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(["deletedAt"])
+          || isServerTimestamp(request.resource.data.deletedAt)
+        )
+        && (
+          request.resource.data.body == null
+          || (
+            request.resource.data.body is string
+            && request.resource.data.body.size() <= 4000
+          )
+        );
+    }
+
+    function validReaction(userId) {
+      return request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(["userId", "emoji", "updatedAt"])
+        && request.resource.data.keys().hasAll(["userId", "emoji", "updatedAt"])
+        && request.resource.data.userId == userId
+        && request.resource.data.emoji is string
+        && request.resource.data.emoji.size() >= 1
+        && request.resource.data.emoji.size() <= 16
+        && isServerTimestamp(request.resource.data.updatedAt);
+    }
+
+    function validMemoryCreate() {
+      return request.resource.data.keys().hasOnly([
+          "authorId",
+          "caption",
+          "mediaPaths",
+          "occurredAt",
+          "locationId",
+          "category",
+          "visibility",
+          "surpriseUntil",
+          "createdAt",
+          "updatedAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.keys().hasAll([
+          "authorId",
+          "caption",
+          "mediaPaths",
+          "occurredAt",
+          "locationId",
+          "category",
+          "visibility",
+          "surpriseUntil",
+          "createdAt",
+          "updatedAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.caption is string
+        && request.resource.data.caption.size() <= 2000
+        && request.resource.data.mediaPaths is list
+        && request.resource.data.mediaPaths.size() >= 1
+        && request.resource.data.mediaPaths.size() <= 10
+        && request.resource.data.occurredAt is timestamp
+        && (
+          request.resource.data.locationId == null
+          || request.resource.data.locationId is string
+        )
+        && request.resource.data.category in [
+          "everyday",
+          "date",
+          "trip",
+          "celebration",
+          "milestone",
+          "gift",
+          "funny",
+          "other"
+        ]
+        && request.resource.data.visibility == "shared"
+        && (
+          request.resource.data.surpriseUntil == null
+          || request.resource.data.surpriseUntil is timestamp
+        )
+        && isServerTimestamp(request.resource.data.createdAt)
+        && isServerTimestamp(request.resource.data.updatedAt)
+        && request.resource.data.schemaVersion == 1;
+    }
+
+    function validOwnedSharedItemCreate() {
+      return request.resource.data.keys().hasOnly([
+          "authorId",
+          "title",
+          "details",
+          "state",
+          "scheduledAt",
+          "occurredAt",
+          "visibility",
+          "createdAt",
+          "updatedAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 1
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.details is string
+        && request.resource.data.details.size() <= 4000
+        && request.resource.data.visibility == "shared"
+        && isServerTimestamp(request.resource.data.createdAt)
+        && isServerTimestamp(request.resource.data.updatedAt)
+        && request.resource.data.schemaVersion == 1;
+    }
+
+    function validOwnedSharedItemUpdate() {
+      return resource.data.authorId == request.auth.uid
+        && request.resource.data.authorId == resource.data.authorId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "title",
+          "details",
+          "state",
+          "scheduledAt",
+          "occurredAt",
+          "visibility",
+          "updatedAt"
+        ])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 1
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.details is string
+        && request.resource.data.details.size() <= 4000
+        && request.resource.data.visibility == "shared"
+        && isServerTimestamp(request.resource.data.updatedAt);
+    }
+
+    function validVoiceJournalCreate(relationshipId, entryId) {
+      return request.resource.data.keys().hasOnly([
+          "authorId",
+          "mediaPath",
+          "durationSeconds",
+          "visibility",
+          "createdAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.keys().hasAll([
+          "authorId",
+          "mediaPath",
+          "durationSeconds",
+          "visibility",
+          "createdAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.mediaPath is string
+        && request.resource.data.mediaPath.matches(
+          "^relationships/" + relationshipId + "/voice/" + entryId + "/[^/]+$"
+        )
+        && request.resource.data.durationSeconds is number
+        && request.resource.data.durationSeconds > 0
+        && request.resource.data.durationSeconds <= 600
+        && request.resource.data.visibility == "shared"
+        && isServerTimestamp(request.resource.data.createdAt)
+        && request.resource.data.schemaVersion == 1;
+    }
+
+    function ownerLocationSharingEnabled(relationshipId, ownerId) {
+      return exists(memberPath(relationshipId, ownerId))
+        && get(memberPath(relationshipId, ownerId)).data.sharingSettings.locationEnabled == true;
+    }
+
+    function canReadLocation(relationshipId, ownerId) {
+      return canWriteRelationship(relationshipId)
+        && userIsActive(ownerId)
+        && resource.data.expiresAt is timestamp
+        && resource.data.expiresAt > request.time
+        && (
+          request.auth.uid == ownerId
+          || ownerLocationSharingEnabled(relationshipId, ownerId)
+        );
+    }
+
+    function canReadMemory(relationshipId) {
+      return canReadRelationship(relationshipId)
+        && (
+          resource.data.surpriseUntil == null
+          || resource.data.authorId == request.auth.uid
+          || (
+            resource.data.surpriseUntil is timestamp
+            && resource.data.surpriseUntil <= request.time
+          )
+        );
+    }
+
+    function validLocationCreate(relationshipId, ownerId) {
+      return request.auth.uid == ownerId
+        && ownerLocationSharingEnabled(relationshipId, ownerId)
+        && request.resource.data.keys().hasOnly([
+          "ownerId",
+          "latitude",
+          "longitude",
+          "horizontalAccuracy",
+          "recordedAt",
+          "expiresAt",
+          "createdAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.keys().hasAll([
+          "ownerId",
+          "latitude",
+          "longitude",
+          "horizontalAccuracy",
+          "recordedAt",
+          "expiresAt",
+          "createdAt",
+          "schemaVersion"
+        ])
+        && request.resource.data.ownerId == ownerId
+        && request.resource.data.latitude is number
+        && request.resource.data.latitude >= -90
+        && request.resource.data.latitude <= 90
+        && request.resource.data.longitude is number
+        && request.resource.data.longitude >= -180
+        && request.resource.data.longitude <= 180
+        && request.resource.data.horizontalAccuracy is number
+        && request.resource.data.horizontalAccuracy >= 0
+        && request.resource.data.horizontalAccuracy <= 10000
+        && isServerTimestamp(request.resource.data.recordedAt)
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.expiresAt <= request.time + duration.value(24, "h")
+        && isServerTimestamp(request.resource.data.createdAt)
+        && request.resource.data.schemaVersion == 1;
+    }
+
+    match /users/{userId} {
+      allow create: if isSelf(userId) && validUserCreate(userId);
+      allow read: if isSelf(userId) && resource.data.accountState != "deleted";
+      allow update: if isSelf(userId)
+        && resource.data.accountState == "active"
+        && validUserUpdate();
+      allow delete: if false;
+
+      match /privatePreferences/{documentId} {
+        allow read: if isSelf(userId) && callerIsActive();
+        allow create: if isSelf(userId)
+          && callerIsActive()
+          && validPrivatePreferenceCreate(userId);
+        allow update: if isSelf(userId)
+          && callerIsActive()
+          && resource.data.ownerId == userId
+          && request.resource.data.ownerId == resource.data.ownerId
+          && request.resource.data.schemaVersion == resource.data.schemaVersion
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["values", "updatedAt"])
+          && request.resource.data.values is map
+          && isServerTimestamp(request.resource.data.updatedAt);
+        allow delete: if isSelf(userId) && callerIsActive();
+      }
+
+      match /privateAIMemories/{memoryId} {
+        allow read: if isSelf(userId) && callerIsActive();
+        allow create: if isSelf(userId)
+          && callerIsActive()
+          && validPrivateAIMemoryCreate(userId);
+        allow update: if isSelf(userId)
+          && callerIsActive()
+          && resource.data.ownerId == userId
+          && request.resource.data.ownerId == resource.data.ownerId
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.schemaVersion == resource.data.schemaVersion
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "fact",
+            "source",
+            "updatedAt"
+          ])
+          && request.resource.data.fact is string
+          && request.resource.data.fact.size() >= 1
+          && request.resource.data.fact.size() <= 2000
+        && request.resource.data.source == resource.data.source
+          && isServerTimestamp(request.resource.data.updatedAt);
+        allow delete: if isSelf(userId) && callerIsActive();
+      }
+
+      match /{document=**} {
+        allow read, write: if false;
+      }
+    }
+
+    match /relationships/{relationshipId} {
+      allow read: if canReadRelationship(relationshipId);
+      allow write: if false;
+
+      match /members/{userId} {
+        allow read: if canReadRelationship(relationshipId);
+        allow create, delete: if false;
+        allow update: if canWriteRelationship(relationshipId)
+          && validMemberSelfUpdate(userId);
+      }
+
+      match /messages/{messageId} {
+        allow read: if canReadRelationship(relationshipId);
+        allow create: if canWriteRelationship(relationshipId)
+          && validMessageCreate(relationshipId, messageId);
+        allow update: if canWriteRelationship(relationshipId)
+          && validMessageUpdate();
+        allow delete: if false;
+
+        match /reactions/{userId} {
+          allow read: if canReadRelationship(relationshipId);
+          allow create, update: if canWriteRelationship(relationshipId)
+            && validReaction(userId);
+          allow delete: if canWriteRelationship(relationshipId)
+            && request.auth.uid == userId;
+        }
+
+        match /readReceipts/{userId} {
+          allow read: if canReadRelationship(relationshipId);
+          allow create, update: if canWriteRelationship(relationshipId)
+            && request.auth.uid == userId
+            && request.resource.data.keys().hasOnly(["userId", "readAt"])
+            && request.resource.data.userId == userId
+            && isServerTimestamp(request.resource.data.readAt);
+          allow delete: if false;
+        }
+      }
+
+      match /memories/{memoryId} {
+        allow read: if canReadMemory(relationshipId);
+        allow create: if canWriteRelationship(relationshipId)
+          && validMemoryCreate();
+        allow update: if canWriteRelationship(relationshipId)
+          && resource.data.authorId == request.auth.uid
+          && request.resource.data.authorId == resource.data.authorId
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.schemaVersion == resource.data.schemaVersion
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "caption",
+            "occurredAt",
+            "locationId",
+            "category",
+            "visibility",
+            "surpriseUntil",
+            "updatedAt"
+          ])
+          && request.resource.data.caption is string
+          && request.resource.data.caption.size() <= 2000
+          && request.resource.data.visibility == "shared"
+          && isServerTimestamp(request.resource.data.updatedAt);
+        allow delete: if canWriteRelationship(relationshipId)
+          && resource.data.authorId == request.auth.uid;
+      }
+
+      match /sharedDays/{dateId} {
+        allow read: if canReadRelationship(relationshipId);
+        allow create: if canWriteRelationship(relationshipId)
+          && request.resource.data.keys().hasOnly([
+            "dateKey",
+            "createdBy",
+            "createdAt",
+            "updatedAt",
+            "schemaVersion"
+          ])
+          && request.resource.data.dateKey == dateId
+          && request.resource.data.createdBy == request.auth.uid
+          && isServerTimestamp(request.resource.data.createdAt)
+          && isServerTimestamp(request.resource.data.updatedAt)
+          && request.resource.data.schemaVersion == 1;
+        allow update, delete: if false;
+
+        match /events/{eventId} {
+          allow read: if canReadRelationship(relationshipId);
+          allow create: if canWriteRelationship(relationshipId)
+            && validOwnedSharedItemCreate();
+          allow update: if canWriteRelationship(relationshipId)
+            && validOwnedSharedItemUpdate();
+          allow delete: if canWriteRelationship(relationshipId)
+            && resource.data.authorId == request.auth.uid;
+        }
+      }
+
+      match /milestones/{milestoneId} {
+        allow read: if canReadRelationship(relationshipId);
+        allow create: if canWriteRelationship(relationshipId)
+          && validOwnedSharedItemCreate();
+        allow update: if canWriteRelationship(relationshipId)
+          && validOwnedSharedItemUpdate();
+        allow delete: if canWriteRelationship(relationshipId)
+          && resource.data.authorId == request.auth.uid;
+      }
+
+      match /activities/{activityId} {
+        allow read: if canReadRelationship(relationshipId);
+        allow create: if canWriteRelationship(relationshipId)
+          && validOwnedSharedItemCreate();
+        allow update: if canWriteRelationship(relationshipId)
+          && validOwnedSharedItemUpdate();
+        allow delete: if canWriteRelationship(relationshipId)
+          && resource.data.authorId == request.auth.uid;
+      }
+
+      match /voiceJournals/{entryId} {
+        allow read: if canReadRelationship(relationshipId);
+        allow create: if canWriteRelationship(relationshipId)
+          && validVoiceJournalCreate(relationshipId, entryId);
+        allow update: if false;
+        allow delete: if canWriteRelationship(relationshipId)
+          && resource.data.authorId == request.auth.uid;
+      }
+
+      match /locations/{locationId} {
+        allow read: if canReadLocation(
+          relationshipId,
+          resource.data.ownerId
+        );
+        allow create: if canWriteRelationship(relationshipId)
+          && validLocationCreate(
+            relationshipId,
+            request.resource.data.ownerId
+          );
+        allow update: if false;
+        allow delete: if canWriteRelationship(relationshipId)
+          && request.auth.uid == resource.data.ownerId;
+      }
+
+      match /insights/{insightId} {
+        allow read: if canReadRelationship(relationshipId);
+        allow write: if false;
+      }
+
+      match /sharedAIMemories/{memoryId} {
+        allow read: if canReadRelationship(relationshipId);
+        allow write: if false;
+      }
+
+      match /{document=**} {
+        allow read, write: if false;
+      }
+    }
+
+    match /userRelationshipIndex/{userId} {
+      allow read: if isSelf(userId) && callerIsActive();
+      allow write: if false;
+
+      match /relationships/{relationshipId} {
+        allow read: if isSelf(userId) && callerIsActive();
+        allow write: if false;
+      }
+    }
+
+    match /invitations/{invitationId} {
+      allow read, write: if false;
+    }
+
+    match /AIRequests/{requestId} {
+      allow read, write: if false;
+    }
+
+    match /aiRequests/{requestId} {
+      allow read, write: if false;
+    }
+
+    match /auditEvents/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /notificationJobs/{jobId} {
+      allow read, write: if false;
+    }
+
+    match /internalRateLimits/{limitId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "development": "replace-with-development-project-id",
+    "staging": "replace-with-staging-project-id",
+    "production": "replace-with-production-project-id"
+  }
+}

@@ -1,0 +1,863 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 71;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		016A2A1EC3ED47F8A4FADF151CAC660D /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 2EEED2C2155689C51E710CA3F2B2D639 /* GoogleService-Info.plist */; };
+		12542FD06F9E57A4E82BAB75BE63A639 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 34837F7E4875AF55080B869182334436 /* FirebaseAnalytics */; };
+		2E6F10A4E4EEB6B26B1714341CC665BC /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 345E8A80610DF8860B285F2EFF7BC207 /* Foundation.framework */; };
+		48FA88C525F64F7AAB7C9A38 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 98DCEC3705CF46FE8477C5E8 /* GoogleSignIn */; };
+		4A4B3CCB15CFE84AC7815FFBD22DBAEA /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 345E8A80610DF8860B285F2EFF7BC207 /* Foundation.framework */; };
+		578726BB1F8374553DF64B03CF7F9729 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 4B6B3E0E40FAF5FBEF942383189A36DE /* FirebaseMessaging */; };
+		5DC12BEA56AC01B6D2CDA26C655EC577 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = D3A7483C82250C352697746D2190F904 /* PrivacyInfo.xcprivacy */; };
+		62441CA32A0F271FD98C704304D2614F /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5344B6FC8EDF88BD8FBB537C729F949B /* FirebaseCore */; };
+		8068AB91360B2AF15CCFEC3A2365B003 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = E7DE053485B0EFC6C24D5411EAE68CFA /* FirebaseStorage */; };
+		92992327D903A9B2F80A3E0C12BD7123 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 345E8A80610DF8860B285F2EFF7BC207 /* Foundation.framework */; };
+		A59765181362A8EE6B26CDDD59A2E9DC /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = FAB66DD9F2AA190455FB26DD1DFB9A68 /* FirebaseRemoteConfig */; };
+		B2877EF8EBAE18DB850F38AEA0BFE51A /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A2F5041F1D37EA41BCFCDB2BF3CB0484 /* FirebaseAuth */; };
+		B312E0CF5C2569A311A44376C2111D50 /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 4110885798880665D07CC13A8ACFA94C /* FirebaseAppCheck */; };
+		DAC9907B7E6BCCCB264EA0651D382D09 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 345E8A80610DF8860B285F2EFF7BC207 /* Foundation.framework */; };
+		E44C6135A118A13522DA985D18A067EE /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = CC942DF81FFDE558DFE149880B246D4C /* FirebaseFirestore */; };
+		E4A753B1947AB4F273861371F5CE7F8F /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = E2A2D8E0CB5DD93909A690BB0DCFEDE2 /* FirebaseFunctions */; };
+		EA84349CC88EC0552B7218E7E29E6A4B /* AvenWidgets.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 183064AE84A7936F3434CF77D85860D7 /* AvenWidgets.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		EBF88C7431C65D8DA90561830A8C0989 /* AvenPrivacyWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A92B14365B719563A357F4F7D2D30F16 /* AvenPrivacyWidget.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		82A1548D8EE6B68BFB453DD30833440E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 30920EC5C1E47CCC222577866C0C71E6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9C7A6E2F39CFC5F43F74D4BDA50A22D7;
+			remoteInfo = Aven;
+		};
+		9DD56E0B175599477F769D63FCBD521F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 30920EC5C1E47CCC222577866C0C71E6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9C7A6E2F39CFC5F43F74D4BDA50A22D7;
+			remoteInfo = Aven;
+		};
+		ADB4C64CC1F723D9516589AD5999988C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 30920EC5C1E47CCC222577866C0C71E6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BBD66B0C335FBCFFB9DA010FD0C0271C;
+			remoteInfo = AvenWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		DAB612B5EDD0FE1E6F846A1DABEF6BEE /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				EA84349CC88EC0552B7218E7E29E6A4B /* AvenWidgets.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		183064AE84A7936F3434CF77D85860D7 /* AvenWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AvenWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		184695636E31F0C29E6750B83C42D29C /* Aven.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Aven.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		26E82CD23336A327B666CDDD11BFDF16 /* AvenWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = AvenWidgets.entitlements; sourceTree = "<group>"; };
+		2EEED2C2155689C51E710CA3F2B2D639 /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Aven/Resources/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		2FC4CFDE1BF5D2568DFA520B3C93F8CE /* Common.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
+		345E8A80610DF8860B285F2EFF7BC207 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		5B0DEA42B8A1D478717216715C1BECD0 /* Development.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
+		636F2D5356FC204950098AD967B7D4E4 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		763836D55AF3FA2AEEC07EB2A3FBD732 /* AvenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AvenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		877BE8EA87B05297B8A10875479A560C /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		A92B14365B719563A357F4F7D2D30F16 /* AvenPrivacyWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AvenPrivacyWidget.swift; sourceTree = "<group>"; };
+		C8195A89DB264B5D2A0191EF6AF56712 /* Staging.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = Staging.xcconfig; sourceTree = "<group>"; };
+		D21BBD1FAAA6E7DBAEA931B019CB9BF2 /* Production.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = Production.xcconfig; sourceTree = "<group>"; };
+		D3A7483C82250C352697746D2190F904 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		D555526433338CAF854805A49A896E47 /* AvenUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AvenUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E388495C19B8F3E7B5D7A56CCF3B3F24 /* Secrets.xcconfig.example */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = Secrets.xcconfig.example; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		7A46D1D1BDCA0C5146C3F52CEE73F09E /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				"Resources/GoogleService-Info.plist",
+			);
+			target = 9C7A6E2F39CFC5F43F74D4BDA50A22D7 /* Aven */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		14BAF6F4E8590241BCBF8525E95109EA /* Aven */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (7A46D1D1BDCA0C5146C3F52CEE73F09E /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Aven; sourceTree = "<group>"; };
+		1B2309227E3AA7F35771E1DC07F8A319 /* AvenIntents */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AvenIntents; sourceTree = "<group>"; };
+		6010A4730F8C0DD7517170B7EF810CBD /* AvenTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AvenTests; sourceTree = "<group>"; };
+		E1C27187FF3A56296FBA5309070F10C3 /* AvenUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = AvenUITests; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		33BFC8311C5D035B74E0CFCFA232C8F2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4A4B3CCB15CFE84AC7815FFBD22DBAEA /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		426DF552FFC152106ED26A69BE761EFB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DAC9907B7E6BCCCB264EA0651D382D09 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6925E687234D1B2D14537AD1DFF5BF41 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				92992327D903A9B2F80A3E0C12BD7123 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E79E637BCE83271DDC17FE1681716204 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				12542FD06F9E57A4E82BAB75BE63A639 /* FirebaseAnalytics in Frameworks */,
+				B312E0CF5C2569A311A44376C2111D50 /* FirebaseAppCheck in Frameworks */,
+				B2877EF8EBAE18DB850F38AEA0BFE51A /* FirebaseAuth in Frameworks */,
+				62441CA32A0F271FD98C704304D2614F /* FirebaseCore in Frameworks */,
+				E44C6135A118A13522DA985D18A067EE /* FirebaseFirestore in Frameworks */,
+				E4A753B1947AB4F273861371F5CE7F8F /* FirebaseFunctions in Frameworks */,
+				578726BB1F8374553DF64B03CF7F9729 /* FirebaseMessaging in Frameworks */,
+				A59765181362A8EE6B26CDDD59A2E9DC /* FirebaseRemoteConfig in Frameworks */,
+				8068AB91360B2AF15CCFEC3A2365B003 /* FirebaseStorage in Frameworks */,
+				48FA88C525F64F7AAB7C9A38 /* GoogleSignIn in Frameworks */,
+				2E6F10A4E4EEB6B26B1714341CC665BC /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0C5E68C9434F7206CC163088CC0C06AC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				CBDAA33913CAC62698D5FC0E6428C326 /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		3AE6BCDAE9B2B38FFE4A0FA9881A28AF /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				2FC4CFDE1BF5D2568DFA520B3C93F8CE /* Common.xcconfig */,
+				5B0DEA42B8A1D478717216715C1BECD0 /* Development.xcconfig */,
+				D21BBD1FAAA6E7DBAEA931B019CB9BF2 /* Production.xcconfig */,
+				877BE8EA87B05297B8A10875479A560C /* README.md */,
+				E388495C19B8F3E7B5D7A56CCF3B3F24 /* Secrets.xcconfig.example */,
+				C8195A89DB264B5D2A0191EF6AF56712 /* Staging.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		4B5C8FCE577EAA2636DF6BF4CC2A6C52 = {
+			isa = PBXGroup;
+			children = (
+				14BAF6F4E8590241BCBF8525E95109EA /* Aven */,
+				1B2309227E3AA7F35771E1DC07F8A319 /* AvenIntents */,
+				6010A4730F8C0DD7517170B7EF810CBD /* AvenTests */,
+				E1C27187FF3A56296FBA5309070F10C3 /* AvenUITests */,
+				80C9E4D1C04809CD661DE7E3D08D0487 /* AvenWidgets */,
+				3AE6BCDAE9B2B38FFE4A0FA9881A28AF /* Config */,
+				0C5E68C9434F7206CC163088CC0C06AC /* Frameworks */,
+				2EEED2C2155689C51E710CA3F2B2D639 /* GoogleService-Info.plist */,
+				D720A754F0D40BC016BF5180E340312F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		80C9E4D1C04809CD661DE7E3D08D0487 /* AvenWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				A92B14365B719563A357F4F7D2D30F16 /* AvenPrivacyWidget.swift */,
+				26E82CD23336A327B666CDDD11BFDF16 /* AvenWidgets.entitlements */,
+				636F2D5356FC204950098AD967B7D4E4 /* Info.plist */,
+				D3A7483C82250C352697746D2190F904 /* PrivacyInfo.xcprivacy */,
+			);
+			path = AvenWidgets;
+			sourceTree = "<group>";
+		};
+		CBDAA33913CAC62698D5FC0E6428C326 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				345E8A80610DF8860B285F2EFF7BC207 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		D720A754F0D40BC016BF5180E340312F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				184695636E31F0C29E6750B83C42D29C /* Aven.app */,
+				763836D55AF3FA2AEEC07EB2A3FBD732 /* AvenTests.xctest */,
+				D555526433338CAF854805A49A896E47 /* AvenUITests.xctest */,
+				183064AE84A7936F3434CF77D85860D7 /* AvenWidgets.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		6A07AEE840D21AFA3DC59264E9B18657 /* AvenUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BE80BCAFF371879221938807802FBD07 /* Build configuration list for PBXNativeTarget "AvenUITests" */;
+			buildPhases = (
+				D56E4E891E6ED53AD6B7CBAAF0DD4485 /* Sources */,
+				426DF552FFC152106ED26A69BE761EFB /* Frameworks */,
+				7B95C2BB924902684BB316156B40D595 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EA4522F16E31FDBACC2E9504E31796E2 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				E1C27187FF3A56296FBA5309070F10C3 /* AvenUITests */,
+			);
+			name = AvenUITests;
+			productName = AvenUITests;
+			productReference = D555526433338CAF854805A49A896E47 /* AvenUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		9C7A6E2F39CFC5F43F74D4BDA50A22D7 /* Aven */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2E58C2F35D355303522C9273E826BBA3 /* Build configuration list for PBXNativeTarget "Aven" */;
+			buildPhases = (
+				C43F3BE1D96A507F603CF2CE575D8175 /* Sources */,
+				E79E637BCE83271DDC17FE1681716204 /* Frameworks */,
+				FFDA7AA53963CE300F8AD9299A882492 /* Resources */,
+				DAB612B5EDD0FE1E6F846A1DABEF6BEE /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				45A53C7E41C59E0F76FCFE7DBD72AD2D /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				14BAF6F4E8590241BCBF8525E95109EA /* Aven */,
+				1B2309227E3AA7F35771E1DC07F8A319 /* AvenIntents */,
+			);
+			name = Aven;
+			packageProductDependencies = (
+				34837F7E4875AF55080B869182334436 /* FirebaseAnalytics */,
+				4110885798880665D07CC13A8ACFA94C /* FirebaseAppCheck */,
+				A2F5041F1D37EA41BCFCDB2BF3CB0484 /* FirebaseAuth */,
+				5344B6FC8EDF88BD8FBB537C729F949B /* FirebaseCore */,
+				CC942DF81FFDE558DFE149880B246D4C /* FirebaseFirestore */,
+				E2A2D8E0CB5DD93909A690BB0DCFEDE2 /* FirebaseFunctions */,
+				4B6B3E0E40FAF5FBEF942383189A36DE /* FirebaseMessaging */,
+				FAB66DD9F2AA190455FB26DD1DFB9A68 /* FirebaseRemoteConfig */,
+				E7DE053485B0EFC6C24D5411EAE68CFA /* FirebaseStorage */,
+				98DCEC3705CF46FE8477C5E8 /* GoogleSignIn */,
+			);
+			productName = Aven;
+			productReference = 184695636E31F0C29E6750B83C42D29C /* Aven.app */;
+			productType = "com.apple.product-type.application";
+		};
+		9F3746C6A0E7A97A47AD083382E46819 /* AvenTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4670954FE2CF8D8E4EE08E4EC249D244 /* Build configuration list for PBXNativeTarget "AvenTests" */;
+			buildPhases = (
+				B31921B03640EEFF88418FDCABC4C978 /* Sources */,
+				33BFC8311C5D035B74E0CFCFA232C8F2 /* Frameworks */,
+				5C8AEE2A00F8FA8D9936E0262F5F46CA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				98D25FD4F98E2E8435C9423F371884A0 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				6010A4730F8C0DD7517170B7EF810CBD /* AvenTests */,
+			);
+			name = AvenTests;
+			productName = AvenTests;
+			productReference = 763836D55AF3FA2AEEC07EB2A3FBD732 /* AvenTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		BBD66B0C335FBCFFB9DA010FD0C0271C /* AvenWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FF3989A818D6E9E8B714BA0CCE6829E4 /* Build configuration list for PBXNativeTarget "AvenWidgets" */;
+			buildPhases = (
+				BD03473C0C42E2E8ECEDD434FA1C84BB /* Sources */,
+				6925E687234D1B2D14537AD1DFF5BF41 /* Frameworks */,
+				43CF229241140B99731BC4780E1C0B8B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				1B2309227E3AA7F35771E1DC07F8A319 /* AvenIntents */,
+			);
+			name = AvenWidgets;
+			productName = AvenWidgets;
+			productReference = 183064AE84A7936F3434CF77D85860D7 /* AvenWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		30920EC5C1E47CCC222577866C0C71E6 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					6A07AEE840D21AFA3DC59264E9B18657 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 9C7A6E2F39CFC5F43F74D4BDA50A22D7;
+					};
+					9C7A6E2F39CFC5F43F74D4BDA50A22D7 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					9F3746C6A0E7A97A47AD083382E46819 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 9C7A6E2F39CFC5F43F74D4BDA50A22D7;
+					};
+					BBD66B0C335FBCFFB9DA010FD0C0271C = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = 92733752B9B94CD038ACCD095CB1C9DC /* Build configuration list for PBXProject "Aven" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				uk,
+				Base,
+			);
+			mainGroup = 4B5C8FCE577EAA2636DF6BF4CC2A6C52;
+			packageReferences = (
+				F5E3F4A84CFFF329BF42DCA66C52568A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				5BD331B90A3745D49B392F4F /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+			);
+			productRefGroup = D720A754F0D40BC016BF5180E340312F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9C7A6E2F39CFC5F43F74D4BDA50A22D7 /* Aven */,
+				9F3746C6A0E7A97A47AD083382E46819 /* AvenTests */,
+				6A07AEE840D21AFA3DC59264E9B18657 /* AvenUITests */,
+				BBD66B0C335FBCFFB9DA010FD0C0271C /* AvenWidgets */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		43CF229241140B99731BC4780E1C0B8B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5DC12BEA56AC01B6D2CDA26C655EC577 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5C8AEE2A00F8FA8D9936E0262F5F46CA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7B95C2BB924902684BB316156B40D595 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FFDA7AA53963CE300F8AD9299A882492 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				016A2A1EC3ED47F8A4FADF151CAC660D /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B31921B03640EEFF88418FDCABC4C978 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BD03473C0C42E2E8ECEDD434FA1C84BB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EBF88C7431C65D8DA90561830A8C0989 /* AvenPrivacyWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C43F3BE1D96A507F603CF2CE575D8175 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D56E4E891E6ED53AD6B7CBAAF0DD4485 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		45A53C7E41C59E0F76FCFE7DBD72AD2D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = AvenWidgets;
+			target = BBD66B0C335FBCFFB9DA010FD0C0271C /* AvenWidgets */;
+			targetProxy = ADB4C64CC1F723D9516589AD5999988C /* PBXContainerItemProxy */;
+		};
+		98D25FD4F98E2E8435C9423F371884A0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Aven;
+			target = 9C7A6E2F39CFC5F43F74D4BDA50A22D7 /* Aven */;
+			targetProxy = 9DD56E0B175599477F769D63FCBD521F /* PBXContainerItemProxy */;
+		};
+		EA4522F16E31FDBACC2E9504E31796E2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Aven;
+			target = 9C7A6E2F39CFC5F43F74D4BDA50A22D7 /* Aven */;
+			targetProxy = 82A1548D8EE6B68BFB453DD30833440E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		05F3CE73DA29668E0E9752244520B698 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5B0DEA42B8A1D478717216715C1BECD0 /* Development.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AVEN_BUNDLE_IDENTIFIER).tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Aven.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Aven";
+			};
+			name = Debug;
+		};
+		12C3CC35FC1543C468DD0EE636986A13 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D21BBD1FAAA6E7DBAEA931B019CB9BF2 /* Production.xcconfig */;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AVEN_BUNDLE_IDENTIFIER).uitests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Aven;
+			};
+			name = Release;
+		};
+		484E29F2F888BDFCEAE57CBF54B5A68E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5B0DEA42B8A1D478717216715C1BECD0 /* Development.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Aven/Aven.entitlements;
+				DEVELOPMENT_TEAM = 284W99L8L3;
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Aven/Info.plist;
+				INFOPLIST_KEY_AvenEnvironment = "$(AVEN_ENVIRONMENT)";
+				INFOPLIST_KEY_AvenExpectedFirebaseProjectID = "$(AVEN_FIREBASE_PROJECT_ID)";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(AVEN_DISPLAY_NAME)";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "Aven can add plans you explicitly choose to your selected calendar.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Use Face ID to protect private relationship content in Aven.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Aven uses location only for moments you explicitly choose to share.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Aven uses the microphone when you choose to record a voice message or journal.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Choose individual photos and videos to add to your shared memories.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AVEN_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) AVEN_APP_TARGET";
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		57D4254586E76650EFF2AD901DBB730F /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D21BBD1FAAA6E7DBAEA931B019CB9BF2 /* Production.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = AvenWidgets/AvenWidgets.entitlements;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AvenWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AVEN_BUNDLE_IDENTIFIER).widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) AVEN_WIDGET_EXTENSION";
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		5E93A61C6935BC87D3C076496F4CEDAE /* Staging */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C8195A89DB264B5D2A0191EF6AF56712 /* Staging.xcconfig */;
+			buildSettings = {
+			};
+			name = Staging;
+		};
+		5EEB0FDC6FD7ED23A51114199230D8B1 /* Staging */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C8195A89DB264B5D2A0191EF6AF56712 /* Staging.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AVEN_BUNDLE_IDENTIFIER).tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Aven.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Aven";
+			};
+			name = Staging;
+		};
+		6C8BEA2351DF0AE0DC2F0A7611C21242 /* Staging */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C8195A89DB264B5D2A0191EF6AF56712 /* Staging.xcconfig */;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AVEN_BUNDLE_IDENTIFIER).uitests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Aven;
+			};
+			name = Staging;
+		};
+		792A714AFD6410C2D71CA19AC6F707A8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5B0DEA42B8A1D478717216715C1BECD0 /* Development.xcconfig */;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		7C7F2444187191F2AFCB464A7ABEC751 /* Staging */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C8195A89DB264B5D2A0191EF6AF56712 /* Staging.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = AvenWidgets/AvenWidgets.entitlements;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AvenWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AVEN_BUNDLE_IDENTIFIER).widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) AVEN_WIDGET_EXTENSION";
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Staging;
+		};
+		7E8981F22D7E8C1194D3D43BF30836D3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D21BBD1FAAA6E7DBAEA931B019CB9BF2 /* Production.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AVEN_BUNDLE_IDENTIFIER).tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Aven.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Aven";
+			};
+			name = Release;
+		};
+		97CB8728C56E0106344FF77E15F45FB5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5B0DEA42B8A1D478717216715C1BECD0 /* Development.xcconfig */;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AVEN_BUNDLE_IDENTIFIER).uitests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Aven;
+			};
+			name = Debug;
+		};
+		B06D4EDD07181889488908B2337A0754 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D21BBD1FAAA6E7DBAEA931B019CB9BF2 /* Production.xcconfig */;
+			buildSettings = {
+			};
+			name = Release;
+		};
+		D29E14221C125BE3946E674EB9F6923D /* Staging */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C8195A89DB264B5D2A0191EF6AF56712 /* Staging.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Aven/Aven.entitlements;
+				DEVELOPMENT_TEAM = "";
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Aven/Info.plist;
+				INFOPLIST_KEY_AvenEnvironment = "$(AVEN_ENVIRONMENT)";
+				INFOPLIST_KEY_AvenExpectedFirebaseProjectID = "$(AVEN_FIREBASE_PROJECT_ID)";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(AVEN_DISPLAY_NAME)";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "Aven can add plans you explicitly choose to your selected calendar.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Use Face ID to protect private relationship content in Aven.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Aven uses location only for moments you explicitly choose to share.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Aven uses the microphone when you choose to record a voice message or journal.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Choose individual photos and videos to add to your shared memories.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AVEN_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) AVEN_APP_TARGET";
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Staging;
+		};
+		D5E78A6163F8F4E5D4D478CAF814AC6D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5B0DEA42B8A1D478717216715C1BECD0 /* Development.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = AvenWidgets/AvenWidgets.entitlements;
+				DEVELOPMENT_TEAM = 284W99L8L3;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AvenWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AVEN_BUNDLE_IDENTIFIER).widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) AVEN_WIDGET_EXTENSION";
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		FDB9963E43F9CF3ACC9056CC6FF30273 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D21BBD1FAAA6E7DBAEA931B019CB9BF2 /* Production.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Aven/Aven.entitlements;
+				DEVELOPMENT_TEAM = "";
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Aven/Info.plist;
+				INFOPLIST_KEY_AvenEnvironment = "$(AVEN_ENVIRONMENT)";
+				INFOPLIST_KEY_AvenExpectedFirebaseProjectID = "$(AVEN_FIREBASE_PROJECT_ID)";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(AVEN_DISPLAY_NAME)";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "Aven can add plans you explicitly choose to your selected calendar.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Use Face ID to protect private relationship content in Aven.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Aven uses location only for moments you explicitly choose to share.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Aven uses the microphone when you choose to record a voice message or journal.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Choose individual photos and videos to add to your shared memories.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AVEN_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) AVEN_APP_TARGET";
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2E58C2F35D355303522C9273E826BBA3 /* Build configuration list for PBXNativeTarget "Aven" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				484E29F2F888BDFCEAE57CBF54B5A68E /* Debug */,
+				D29E14221C125BE3946E674EB9F6923D /* Staging */,
+				FDB9963E43F9CF3ACC9056CC6FF30273 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4670954FE2CF8D8E4EE08E4EC249D244 /* Build configuration list for PBXNativeTarget "AvenTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				05F3CE73DA29668E0E9752244520B698 /* Debug */,
+				5EEB0FDC6FD7ED23A51114199230D8B1 /* Staging */,
+				7E8981F22D7E8C1194D3D43BF30836D3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		92733752B9B94CD038ACCD095CB1C9DC /* Build configuration list for PBXProject "Aven" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				792A714AFD6410C2D71CA19AC6F707A8 /* Debug */,
+				5E93A61C6935BC87D3C076496F4CEDAE /* Staging */,
+				B06D4EDD07181889488908B2337A0754 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BE80BCAFF371879221938807802FBD07 /* Build configuration list for PBXNativeTarget "AvenUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				97CB8728C56E0106344FF77E15F45FB5 /* Debug */,
+				6C8BEA2351DF0AE0DC2F0A7611C21242 /* Staging */,
+				12C3CC35FC1543C468DD0EE636986A13 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FF3989A818D6E9E8B714BA0CCE6829E4 /* Build configuration list for PBXNativeTarget "AvenWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D5E78A6163F8F4E5D4D478CAF814AC6D /* Debug */,
+				7C7F2444187191F2AFCB464A7ABEC751 /* Staging */,
+				57D4254586E76650EFF2AD901DBB730F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5BD331B90A3745D49B392F4F /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS.git";
+			requirement = {
+				kind = exactVersion;
+				version = 9.0.0;
+			};
+		};
+		F5E3F4A84CFFF329BF42DCA66C52568A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = exactVersion;
+				version = 12.16.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		34837F7E4875AF55080B869182334436 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E3F4A84CFFF329BF42DCA66C52568A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		4110885798880665D07CC13A8ACFA94C /* FirebaseAppCheck */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E3F4A84CFFF329BF42DCA66C52568A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAppCheck;
+		};
+		4B6B3E0E40FAF5FBEF942383189A36DE /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E3F4A84CFFF329BF42DCA66C52568A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		5344B6FC8EDF88BD8FBB537C729F949B /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E3F4A84CFFF329BF42DCA66C52568A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		98DCEC3705CF46FE8477C5E8 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5BD331B90A3745D49B392F4F /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		A2F5041F1D37EA41BCFCDB2BF3CB0484 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E3F4A84CFFF329BF42DCA66C52568A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		CC942DF81FFDE558DFE149880B246D4C /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E3F4A84CFFF329BF42DCA66C52568A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		E2A2D8E0CB5DD93909A690BB0DCFEDE2 /* FirebaseFunctions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E3F4A84CFFF329BF42DCA66C52568A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFunctions;
+		};
+		E7DE053485B0EFC6C24D5411EAE68CFA /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E3F4A84CFFF329BF42DCA66C52568A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		FAB66DD9F2AA190455FB26DD1DFB9A68 /* FirebaseRemoteConfig */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F5E3F4A84CFFF329BF42DCA66C52568A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseRemoteConfig;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 30920EC5C1E47CCC222577866C0C71E6 /* Project object */;
+}

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.developer.default-data-protection</key>
+	<string>NSFileProtectionComplete</string>
+	<!--
+		Manual Apple Developer setup is required before device signing.
+		Register and enable group.$(AVEN_BUNDLE_IDENTIFIER) for both targets
+		after replacing the temporary bundle identifiers.
+	-->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.$(AVEN_BUNDLE_IDENTIFIER)</string>
+	</array>
+</dict>
+</plist>

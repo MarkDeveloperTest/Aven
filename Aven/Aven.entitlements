@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+	<!--
+		Manual Apple Developer setup is required before device signing.
+		Register and enable group.$(AVEN_BUNDLE_IDENTIFIER) for both Aven and
+		AvenWidgets after replacing the temporary bundle identifiers.
+	-->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.$(AVEN_BUNDLE_IDENTIFIER)</string>
+	</array>
+</dict>
+</plist>

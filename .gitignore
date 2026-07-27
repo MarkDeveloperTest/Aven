@@ -1,0 +1,68 @@
+# macOS
+.DS_Store
+
+# Local agent skill bundles (workspace tooling, not application source)
+.agents/
+.claude/
+agent/
+skills-lock.json
+
+# Xcode user state and build products
+DerivedData/
+build/
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.xcarchive
+*.xcresult
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+*.moved-aside
+xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Swift Package Manager local state
+.build/
+.swiftpm/
+
+# JavaScript tooling and Firebase local state
+node_modules/
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+firebase/emulator-data/
+firebase/.emulator/
+
+# Local environment and secret configuration
+.env*
+!.env.example
+!.env.*.example
+Secrets.xcconfig
+GoogleSignIn.xcconfig
+*.secrets.xcconfig
+*.secret.xcconfig
+
+# Firebase and Google credentials
+GoogleService-Info.plist
+GoogleService-Info-*.plist
+serviceAccountKey.json
+service-account*.json
+*-service-account*.json
+firebase-adminsdk-*.json
+!**/*service-account*.example.json
+!**/serviceAccount*.example.json
+
+# Signing and private key material
+*.p12
+*.p8
+*.cer
+*.mobileprovision
+*.provisionprofile
+*.jks
+*.keystore
+*.key
+*.pem
