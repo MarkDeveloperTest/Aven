@@ -12,9 +12,6 @@ final class FirebaseRelationshipRepository: RelationshipRepository {
 
     private let functions: Functions
     private let firestore: Firestore
-    private let callableOptions = HTTPSCallableOptions(
-        requireLimitedUseAppCheckTokens: true
-    )
     private var userObservationTask: Task<Void, Never>?
     private var relationshipObservationTask: Task<Void, Never>?
     private var observedUserID: String?
@@ -47,10 +44,7 @@ final class FirebaseRelationshipRepository: RelationshipRepository {
             idempotencyKey: idempotencyKey
         )
         let callable: Callable<CreateInvitationRequest, CreateInvitationResponse> =
-            functions.httpsCallable(
-                "createInvitation",
-                options: callableOptions
-            )
+            functions.httpsCallable("createInvitation")
 
         do {
             let response = try await callable.call(request)
@@ -83,10 +77,7 @@ final class FirebaseRelationshipRepository: RelationshipRepository {
         }
 
         let callable: Callable<RevokeInvitationRequest, RevokeInvitationResponse> =
-            functions.httpsCallable(
-                "revokeInvitation",
-                options: callableOptions
-            )
+            functions.httpsCallable("revokeInvitation")
         do {
             let response = try await callable.call(
                 RevokeInvitationRequest(
@@ -113,10 +104,7 @@ final class FirebaseRelationshipRepository: RelationshipRepository {
         }
 
         let callable: Callable<RedeemInvitationRequest, RedeemInvitationResponse> =
-            functions.httpsCallable(
-                "redeemInvitation",
-                options: callableOptions
-            )
+            functions.httpsCallable("redeemInvitation")
         do {
             let response = try await callable.call(
                 RedeemInvitationRequest(

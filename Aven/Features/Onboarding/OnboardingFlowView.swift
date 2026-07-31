@@ -4,6 +4,7 @@ import UIKit
 struct OnboardingFlowView: View {
     @Environment(AppSession.self) private var session
     @Environment(AppSettings.self) private var settings
+    @Environment(RelationshipStore.self) private var relationshipStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var isNameFocused: Bool
     @State private var store = OnboardingStore()
@@ -14,7 +15,7 @@ struct OnboardingFlowView: View {
             primaryTitle: store.step == .finish
                 ? "onboarding.finish.action"
                 : "action.continue",
-            showsPrimaryAction: store.step != .finish || session.user != nil,
+            showsPrimaryAction: showsPrimaryAction,
             showsBack: store.canGoBack,
             isLoading: session.isWorking,
             primaryAction: {
@@ -29,7 +30,18 @@ struct OnboardingFlowView: View {
         }
         .task(id: session.onboardingDraftUserID) {
             store.attach(to: session.onboardingDraftUserID)
+            if relationshipStore.isActive == false {
+                store.requirePairingBeforeFinish()
+            }
             settings.language = AppLanguage.inferred(fromRegionCode: store.countryCode)
+        }
+        .task(id: pairingPreparationID) {
+            await preparePairingProfileIfNeeded()
+        }
+        .onChange(of: relationshipStore.isActive) { _, isActive in
+            if isActive == false {
+                store.requirePairingBeforeFinish()
+            }
         }
         .onChange(of: store.step) { _, _ in
             isNameFocused = false
@@ -348,11 +360,27 @@ struct OnboardingFlowView: View {
     }
 
     private var pairingScreen: some View {
-        CouplePairingView(
-            presentation: .onboarding,
-            relationshipType: store.relationshipType,
-            relationshipStartDate: store.relationshipStartDate
-        )
+        Group {
+            if session.user == nil {
+                AuthenticationView(isEmbedded: true)
+            } else if session.profile == nil {
+                HStack(spacing: 14) {
+                    ProgressView()
+                        .tint(PremiumArrivalStyle.pinkInk)
+
+                    Text("pairing.connecting")
+                        .font(.body.weight(.medium))
+                }
+                .frame(maxWidth: .infinity, minHeight: 72)
+                .accessibilityElement(children: .combine)
+            } else {
+                CouplePairingView(
+                    presentation: .onboarding,
+                    relationshipType: store.relationshipType,
+                    relationshipStartDate: store.relationshipStartDate
+                )
+            }
+        }
     }
 
     private var finishScreen: some View {
@@ -452,6 +480,32 @@ struct OnboardingFlowView: View {
         )
     }
 
+    private var showsPrimaryAction: Bool {
+        switch store.step {
+        case .pairing:
+            pairingIsComplete
+        case .finish:
+            session.user != nil
+        default:
+            true
+        }
+    }
+
+    private var pairingPreparationID: String {
+        guard store.step == .pairing else { return "not-pairing" }
+        return [
+            "pairing",
+            session.user?.id ?? "signed-out",
+            session.profile?.userID ?? "profile-missing",
+        ].joined(separator: ":")
+    }
+
+    private var pairingIsComplete: Bool {
+        session.user != nil
+            && session.profile != nil
+            && relationshipStore.isActive
+    }
+
     private var screenTransition: AnyTransition {
         reduceMotion
             ? .opacity
@@ -468,13 +522,32 @@ struct OnboardingFlowView: View {
         transitionDirection = .forward
         Haptics.light()
         withAnimation(reduceMotion ? nil : .smooth(duration: 0.42)) {
-            store.goForward()
+            store.goForward(pairingIsComplete: pairingIsComplete)
         }
         if previousStep == .preciseLocation, store.wantsPreciseLocation {
             Task { await LocationAuthorizationClient.requestAlwaysPreciseIfNeeded() }
         }
         if store.step == previousStep, store.validationError != nil {
             Haptics.error()
+        }
+    }
+
+    private func preparePairingProfileIfNeeded() async {
+        guard
+            store.step == .pairing,
+            let user = session.user,
+            session.profile == nil
+        else {
+            return
+        }
+
+        do {
+            let profile = try store.makeProfile(userID: user.id)
+            await session.prepareProfileForPairing(profile)
+        } catch let error as AppError {
+            store.validationError = error
+        } catch {
+            store.validationError = .unknown
         }
     }
 

@@ -26,3 +26,12 @@ export const sensitiveCallableOptions: CallableOptions = {
   maxInstances: 20,
   concurrency: 20
 };
+
+export const pairingCallableOptions: CallableOptions = {
+  region: PRIMARY_REGION,
+  enforceAppCheck: false,
+  timeoutSeconds: 30,
+  memory: "256MiB",
+  maxInstances: 20,
+  concurrency: 20
+};

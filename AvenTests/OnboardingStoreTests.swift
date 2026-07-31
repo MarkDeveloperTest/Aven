@@ -70,6 +70,7 @@ struct OnboardingStoreTests {
         firstStore.attach(to: "user-a")
         firstStore.step = .relationshipType
         firstStore.displayName = "Oksana"
+        firstStore.gender = .female
 
         let restoredStore = OnboardingStore(defaults: defaults)
         restoredStore.attach(to: "user-a")
@@ -142,10 +143,31 @@ struct OnboardingStoreTests {
         #expect(store.step == .pairing)
 
         store.goForward()
+        #expect(store.step == .pairing)
+
+        store.goForward(pairingIsComplete: true)
         #expect(store.step == .finish)
 
         store.goBack()
         #expect(store.step == .pairing)
+    }
+
+    @Test("Persisted finish cannot bypass required pairing")
+    func restoresRequiredPairing() {
+        let defaults = isolatedDefaults()
+        let store = OnboardingStore(defaults: defaults)
+        store.attach(to: "user-a")
+        store.step = .finish
+
+        store.requirePairingBeforeFinish()
+
+        #expect(store.step == .pairing)
+        #expect(
+            OnboardingStore.hasSavedProgress(
+                for: "user-a",
+                defaults: defaults
+            )
+        )
     }
 
     @Test("Drafts are isolated between authenticated users")
@@ -169,6 +191,7 @@ struct OnboardingStoreTests {
         let store = OnboardingStore(defaults: defaults)
         store.attach(to: AppSession.localOnboardingDraftUserID)
         store.displayName = "Oksana"
+        store.gender = .female
         store.step = .finish
 
         let restoredStore = OnboardingStore(defaults: defaults)

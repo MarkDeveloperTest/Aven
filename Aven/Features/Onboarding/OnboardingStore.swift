@@ -118,6 +118,15 @@ final class OnboardingStore {
         step != .privacy
     }
 
+    static func hasSavedProgress(
+        for userID: String,
+        defaults: UserDefaults = .standard
+    ) -> Bool {
+        defaults.object(
+            forKey: "aven.onboarding.\(userID).\(Key.step)"
+        ) != nil
+    }
+
     func attach(to userID: String) {
         guard ownerUserID != userID else { return }
         ownerUserID = userID
@@ -206,7 +215,7 @@ final class OnboardingStore {
         }
     }
 
-    func goForward() {
+    func goForward(pairingIsComplete: Bool = false) {
         validationError = nil
 
         switch step {
@@ -247,6 +256,7 @@ final class OnboardingStore {
         case .aiPreference:
             step = .pairing
         case .pairing:
+            guard pairingIsComplete else { return }
             step = .finish
         case .finish:
             return
@@ -280,6 +290,11 @@ final class OnboardingStore {
         guard let ownerUserID else { return }
         Self.clearProgress(for: ownerUserID, defaults: defaults)
         self.ownerUserID = nil
+    }
+
+    func requirePairingBeforeFinish() {
+        guard step == .finish else { return }
+        step = .pairing
     }
 
     static func clearProgress(

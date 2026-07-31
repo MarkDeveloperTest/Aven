@@ -15,8 +15,13 @@ undeployed. The pairing Functions `createInvitation`, `redeemInvitation`, and
 `revokeInvitation` are live in `europe-west2`, with the invitation-signing
 secret held in Secret Manager.
 
+Onboarding now requires authentication and prepares the entered profile before
+showing pairing actions. Its Continue action stays unavailable until Firebase
+observes an active relationship, and persisted progress cannot jump from an
+unpaired state to the finish screen.
+
 The backend scaffold includes Firestore Rules, Storage Rules, indexes, Node 22
-TypeScript Functions, and emulator tests. TypeScript build/lint, 10 unit tests,
+TypeScript Functions, and emulator tests. TypeScript build/lint, 11 unit tests,
 18 Firestore/Storage Rules tests, and 7 Firestore integration tests pass
 locally. A production-dependency `npm audit --omit=dev --audit-level=high`
 also passes after bounded transitive security overrides.
@@ -30,9 +35,12 @@ requests reach the enabled provider. The app's demo authentication path has
 been removed. Google provider/OAuth creation and a refreshed local Firebase
 plist remain pending. A completed user login has not been verified because the
 available Xcode 27 beta simulator service hangs during application
-installation. App Check is registered for the iOS app with App Attest, while
-Storage, FCM, and provider-backed AI are not configured. Debug builds still
-need a real App Check debug token registered after the app runs once.
+installation. A signed Debug build was installed and launched on the connected
+physical iPhone after the pairing deployment, but a two-account pairing run has
+not yet been completed. App Check is registered for the iOS app with App Attest, while
+Storage, FCM, and provider-backed AI are not configured. The three pairing
+callables require Firebase Authentication but intentionally do not enforce App
+Check, so development installs do not depend on per-device debug-token setup.
 
 ## Environment strategy
 
@@ -209,7 +217,8 @@ Start with observability before enforcement, then:
 1. verify legitimate development and staging traffic
 2. configure and protect debug tokens as credentials
 3. enable App Attest for production
-4. enforce App Check on sensitive Functions first
+4. enforce App Check on sensitive Functions after verified clients are ready;
+   pairing currently remains authentication-only to avoid blocking users
 5. enforce supported Firebase services after monitoring rejects
 6. document recovery and key/team changes
 
@@ -246,17 +255,20 @@ enable precise sharing, or make an unavailable provider mandatory.
 - [x] Signed Debug device build carries the Apple sign-in entitlement
 - [ ] Staging and production projects/configuration created
 - [x] Post-Firebase-SDK iOS build and build-for-testing verified
+- [x] Current signed Debug build installed and launched on physical iPhone
 - [ ] Simulator launch verified on a functioning runtime
 - [ ] Authentication providers complete a local test
 - [x] Firestore/Storage Rules behavior verified locally with 18 tests
-- [x] Functions build/lint and 10 unit tests pass locally
+- [x] Functions build/lint and 11 unit tests pass locally
 - [x] Firestore integration suite passes locally with 7 tests
 - [x] Production dependency audit reports zero high-severity vulnerabilities
 - [x] Five reviewed composite indexes deployed
 - [ ] Three TTL policies deployed after explicit billing approval
 - [ ] Storage created and Storage Rules deployed
 - [x] Pairing Functions deployed in `europe-west2`
-- [ ] Pairing Functions exercised with authenticated, App Check-attested users
+- [x] Pairing call reaches the Firebase Authentication guard without App Check
+- [x] Onboarding pairing gate blocks forward navigation while unpaired
+- [ ] Pairing Functions exercised end to end with two authenticated users
 - [ ] App Check valid and invalid requests tested
 - [ ] APNs/FCM foreground, background, and privacy modes tested
 - [ ] Crash/analytics events contain no private payloads

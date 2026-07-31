@@ -1,6 +1,9 @@
 import type {CallableRequest} from "firebase-functions/v2/https";
 import {describe, expect, it} from "vitest";
-import {requireVerifiedCaller} from "../../src/auth";
+import {
+  requireAuthenticatedCaller,
+  requireVerifiedCaller
+} from "../../src/auth";
 
 function requestWith(
   auth: unknown,
@@ -15,6 +18,21 @@ function requestWith(
 }
 
 describe("callable caller verification", () => {
+  it("allows authenticated pairing callers without App Check", () => {
+    expect(
+      () => requireAuthenticatedCaller(
+        requestWith(undefined, undefined)
+      )
+    ).toThrow(
+      expect.objectContaining({code: "unauthenticated"})
+    );
+    expect(
+      requireAuthenticatedCaller(
+        requestWith({uid: "alice", token: {}}, undefined)
+      )
+    ).toEqual({uid: "alice"});
+  });
+
   it("requires both Firebase Authentication and App Check", () => {
     expect(
       () => requireVerifiedCaller(requestWith(undefined, undefined))

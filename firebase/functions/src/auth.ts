@@ -6,6 +6,23 @@ export interface VerifiedCaller {
   readonly appId: string;
 }
 
+export interface AuthenticatedCaller {
+  readonly uid: string;
+}
+
+export function requireAuthenticatedCaller(
+  request: CallableRequest<unknown>
+): AuthenticatedCaller {
+  if (request.auth === undefined) {
+    throw new HttpsError(
+      "unauthenticated",
+      "Authentication is required."
+    );
+  }
+
+  return {uid: request.auth.uid};
+}
+
 export function requireVerifiedCaller(
   request: CallableRequest<unknown>
 ): VerifiedCaller {

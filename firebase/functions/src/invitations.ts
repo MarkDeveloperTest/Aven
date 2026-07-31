@@ -9,9 +9,9 @@ import {
   type Transaction
 } from "firebase-admin/firestore";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
-import {requireVerifiedCaller} from "./auth";
+import {requireAuthenticatedCaller} from "./auth";
 import {requireActiveUser} from "./authorization";
-import {sensitiveCallableOptions, invitationSigningSecret} from "./config";
+import {pairingCallableOptions, invitationSigningSecret} from "./config";
 import {requireConfiguredSecret, runCallable} from "./errors";
 import {db} from "./firebase";
 import {logSecurityEvent} from "./logging";
@@ -141,11 +141,11 @@ function writeAuditEvent(
 
 export const createInvitation = onCall(
   {
-    ...sensitiveCallableOptions,
+    ...pairingCallableOptions,
     secrets: [invitationSigningSecret]
   },
   async (request) => {
-    const caller = requireVerifiedCaller(request);
+    const caller = requireAuthenticatedCaller(request);
 
     return runCallable("createInvitation", caller.uid, async () => {
       const input = parseInput(
@@ -259,9 +259,9 @@ export const createInvitation = onCall(
 );
 
 export const revokeInvitation = onCall(
-  sensitiveCallableOptions,
+  pairingCallableOptions,
   async (request) => {
-    const caller = requireVerifiedCaller(request);
+    const caller = requireAuthenticatedCaller(request);
 
     return runCallable("revokeInvitation", caller.uid, async () => {
       const input = parseInput(
@@ -331,9 +331,9 @@ export const revokeInvitation = onCall(
 );
 
 export const redeemInvitation = onCall(
-  sensitiveCallableOptions,
+  pairingCallableOptions,
   async (request) => {
-    const caller = requireVerifiedCaller(request);
+    const caller = requireAuthenticatedCaller(request);
 
     return runCallable("redeemInvitation", caller.uid, async () => {
       const input = parseInput(

@@ -78,7 +78,9 @@ final class AppSession {
 
         user = currentUser
         profile = await environment.profileRepository.loadProfile(for: currentUser.id)
-        phase = profile == nil ? .onboarding : .authenticated
+        phase = shouldContinueOnboarding(profile: profile)
+            ? .onboarding
+            : .authenticated
     }
 
     func signInWithApple(_ payload: AppleSignInPayload) async {
@@ -105,6 +107,29 @@ final class AppSession {
             presentedError = appError
         } catch {
             AppLogger.persistence.error("Profile save failed")
+            presentedError = .unknown
+        }
+    }
+
+    func prepareProfileForPairing(_ profile: UserProfile) async {
+        guard
+            isWorking == false,
+            phase == .onboarding,
+            user?.id == profile.userID,
+            self.profile == nil
+        else {
+            return
+        }
+
+        isWorking = true
+        defer { isWorking = false }
+        do {
+            try await environment.profileRepository.saveProfile(profile)
+            self.profile = profile
+        } catch let appError as AppError {
+            presentedError = appError
+        } catch {
+            AppLogger.persistence.error("Pairing profile preparation failed")
             presentedError = .unknown
         }
     }
@@ -181,7 +206,9 @@ final class AppSession {
             let authenticatedUser = try await operation()
             user = authenticatedUser
             profile = await environment.profileRepository.loadProfile(for: authenticatedUser.id)
-            phase = profile == nil ? .onboarding : .authenticated
+            phase = shouldContinueOnboarding(profile: profile)
+                ? .onboarding
+                : .authenticated
         } catch let appError as AppError {
             presentedError = appError
         } catch let authError as AuthenticationError {
@@ -190,5 +217,11 @@ final class AppSession {
             AppLogger.authentication.error("Authentication operation failed")
             presentedError = .unknown
         }
+    }
+
+    private func shouldContinueOnboarding(profile: UserProfile?) -> Bool {
+        profile == nil || OnboardingStore.hasSavedProgress(
+            for: Self.localOnboardingDraftUserID
+        )
     }
 }
