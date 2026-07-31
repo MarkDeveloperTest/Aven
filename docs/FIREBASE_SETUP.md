@@ -10,9 +10,10 @@ machine-local and ignored by Git. Staging and production projects do not exist.
 The development project's default Firestore database is live in
 `europe-west2`, and the reviewed Firestore Rules plus all five composite indexes
 are deployed. Anonymous live document access is denied. The project is on the
-free Spark plan. The three checked-in TTL policies have not been deployed
-because they require an explicit billing decision. No Storage bucket or
-Functions deployment is live.
+Blaze plan. The three checked-in TTL policies and Storage bucket remain
+undeployed. The pairing Functions `createInvitation`, `redeemInvitation`, and
+`revokeInvitation` are live in `europe-west2`, with the invitation-signing
+secret held in Secret Manager.
 
 The backend scaffold includes Firestore Rules, Storage Rules, indexes, Node 22
 TypeScript Functions, and emulator tests. TypeScript build/lint, 10 unit tests,
@@ -29,8 +30,9 @@ requests reach the enabled provider. The app's demo authentication path has
 been removed. Google provider/OAuth creation and a refreshed local Firebase
 plist remain pending. A completed user login has not been verified because the
 available Xcode 27 beta simulator service hangs during application
-installation. App Check, Storage, Functions, FCM, and provider-backed AI are
-not configured.
+installation. App Check is registered for the iOS app with App Attest, while
+Storage, FCM, and provider-backed AI are not configured. Debug builds still
+need a real App Check debug token registered after the app runs once.
 
 ## Environment strategy
 
@@ -171,9 +173,9 @@ Use explicit project aliases such as `development`, `staging`, and `production`.
 Never make `production` the implicit target for routine local commands.
 
 The committed `development` alias points to `aven-ios-dev-4f7c2`. The default
-Firestore database, Rules, and five composite indexes are live there. Storage
-Rules, Functions, three TTL policies, and all staging/production deployments
-remain pending.
+Firestore database, Rules, five composite indexes, and the three pairing
+Functions are live there. Storage Rules, three TTL policies, and all
+staging/production deployments remain pending.
 
 Functions should use TypeScript strict mode, runtime schema validation, typed
 errors, structured redacted logging, idempotency, retry-aware handlers, and
@@ -221,6 +223,12 @@ read only by the least-privileged server function. Cloud AI endpoints must
 verify Firebase Authentication, App Check, relationship membership, category
 consent, input schema, and rate limit. Do not log raw prompts by default.
 
+`secureAIProxy` is not deployed in development. Its Firebase secret and
+environment placeholders exist only because the shared Functions codebase
+requires declarations to be present while pairing Functions are deployed; do
+not deploy that endpoint until they are replaced with a real approved provider
+configuration.
+
 ## Remote Config safe defaults
 
 Ship local defaults for age gating, disabled experiments, AI availability,
@@ -247,7 +255,8 @@ enable precise sharing, or make an unavailable provider mandatory.
 - [x] Five reviewed composite indexes deployed
 - [ ] Three TTL policies deployed after explicit billing approval
 - [ ] Storage created and Storage Rules deployed
-- [ ] Functions deployed and live behavior verified
+- [x] Pairing Functions deployed in `europe-west2`
+- [ ] Pairing Functions exercised with authenticated, App Check-attested users
 - [ ] App Check valid and invalid requests tested
 - [ ] APNs/FCM foreground, background, and privacy modes tested
 - [ ] Crash/analytics events contain no private payloads
