@@ -99,6 +99,21 @@ function requireActiveUnpairedUser(
   }
 }
 
+function requireDisplayName(user: DocumentData | undefined): string {
+  const displayName: unknown = user?.["displayName"];
+  if (
+    typeof displayName !== "string"
+    || displayName.trim().length === 0
+    || displayName.length > 80
+  ) {
+    throw new HttpsError(
+      "internal",
+      "The user profile is incomplete."
+    );
+  }
+  return displayName;
+}
+
 function relationshipStartTimestamp(
   input: CreateInvitationInput
 ): Timestamp | null {
@@ -405,6 +420,8 @@ export const redeemInvitation = onCall(
           ]);
           requireActiveUnpairedUser(creator.data());
           requireActiveUnpairedUser(redeemer.data());
+          const creatorDisplayName = requireDisplayName(creator.data());
+          const redeemerDisplayName = requireDisplayName(redeemer.data());
 
           const pendingInvitations = await transaction.get(
             db
@@ -460,6 +477,10 @@ export const redeemInvitation = onCall(
           const memberIds = [creatorId, caller.uid];
           transaction.create(relationshipReference, {
             memberIds,
+            memberDisplayNames: {
+              [creatorId]: creatorDisplayName,
+              [caller.uid]: redeemerDisplayName
+            },
             status: "active",
             createdAt: now,
             updatedAt: now,

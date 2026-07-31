@@ -29,8 +29,24 @@ struct OnboardingStoreTests {
 
         store.goForward()
 
-        #expect(store.step == .countryRegion)
+        #expect(store.step == .gender)
         #expect(store.validationError == nil)
+    }
+
+    @Test("Gender requires an explicit male or female choice")
+    func validatesGender() {
+        let defaults = isolatedDefaults()
+        let store = OnboardingStore(defaults: defaults)
+        store.attach(to: "user-a")
+        store.step = .gender
+
+        store.goForward()
+        #expect(store.step == .gender)
+        #expect(store.validationError == .validation(.gender))
+
+        store.gender = .female
+        store.goForward()
+        #expect(store.step == .countryRegion)
     }
 
     @Test("Legacy unspecified relationship drafts migrate to dating")
@@ -90,7 +106,7 @@ struct OnboardingStoreTests {
         store.wantsNotifications = false
 
         store.goForward()
-        #expect(store.step == .aiPreference)
+        #expect(store.step == .preciseLocation)
 
         store.goBack()
         #expect(store.step == .notifications)
@@ -98,6 +114,9 @@ struct OnboardingStoreTests {
         store.wantsNotifications = true
         store.goForward()
         #expect(store.step == .notificationPreviews)
+
+        store.goForward()
+        #expect(store.step == .preciseLocation)
     }
 
     @Test("Focused screens move backward in the expected order")
@@ -109,7 +128,24 @@ struct OnboardingStoreTests {
 
         store.goBack()
 
-        #expect(store.step == .birthDate)
+        #expect(store.step == .gender)
+    }
+
+    @Test("Partner pairing is part of onboarding before completion")
+    func includesPairingBeforeFinish() {
+        let defaults = isolatedDefaults()
+        let store = OnboardingStore(defaults: defaults)
+        store.attach(to: "user-a")
+        store.step = .aiPreference
+
+        store.goForward()
+        #expect(store.step == .pairing)
+
+        store.goForward()
+        #expect(store.step == .finish)
+
+        store.goBack()
+        #expect(store.step == .pairing)
     }
 
     @Test("Drafts are isolated between authenticated users")
@@ -125,6 +161,45 @@ struct OnboardingStoreTests {
 
         #expect(secondStore.displayName.isEmpty)
         #expect(secondStore.step == .privacy)
+    }
+
+    @Test("Local onboarding draft survives sign-in until completion")
+    func retainsLocalDraftForFinalSignIn() {
+        let defaults = isolatedDefaults()
+        let store = OnboardingStore(defaults: defaults)
+        store.attach(to: AppSession.localOnboardingDraftUserID)
+        store.displayName = "Oksana"
+        store.step = .finish
+
+        let restoredStore = OnboardingStore(defaults: defaults)
+        restoredStore.attach(to: AppSession.localOnboardingDraftUserID)
+
+        #expect(restoredStore.displayName == "Oksana")
+        #expect(restoredStore.step == .finish)
+    }
+
+    @Test("Debug reset clears only the selected user's onboarding draft")
+    func clearsSelectedUserDraft() {
+        let defaults = isolatedDefaults()
+        let firstStore = OnboardingStore(defaults: defaults)
+        firstStore.attach(to: "user-a")
+        firstStore.displayName = "Oksana"
+        firstStore.step = .pairing
+
+        let secondStore = OnboardingStore(defaults: defaults)
+        secondStore.attach(to: "user-b")
+        secondStore.displayName = "Alex"
+
+        OnboardingStore.clearProgress(for: "user-a", defaults: defaults)
+
+        let restoredFirstStore = OnboardingStore(defaults: defaults)
+        restoredFirstStore.attach(to: "user-a")
+        let restoredSecondStore = OnboardingStore(defaults: defaults)
+        restoredSecondStore.attach(to: "user-b")
+
+        #expect(restoredFirstStore.displayName.isEmpty)
+        #expect(restoredFirstStore.step == .privacy)
+        #expect(restoredSecondStore.displayName == "Alex")
     }
 
     private func isolatedDefaults() -> UserDefaults {

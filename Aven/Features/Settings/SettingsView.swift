@@ -5,6 +5,7 @@ import Observation
 import Photos
 import SwiftUI
 import UIKit
+import UserNotifications
 
 struct SettingsView: View {
     @Environment(AppSession.self) private var session
@@ -26,14 +27,6 @@ struct SettingsView: View {
 
                 Button("settings.sign_out") {
                     Task { await session.signOut() }
-                }
-            }
-
-            Section("settings.appearance.section") {
-                Picker("settings.theme", selection: $settings.theme) {
-                    ForEach(AvenTheme.allCases) { theme in
-                        Text(theme.localizedResource).tag(theme)
-                    }
                 }
             }
 
@@ -74,6 +67,37 @@ struct SettingsView: View {
                 }
             }
 
+            #if DEBUG
+            Section("settings.debug.section") {
+                if let userID = session.user?.id {
+                    LabeledContent("settings.debug.user_id") {
+                        Text(verbatim: userID)
+                            .font(.caption.monospaced())
+                            .textSelection(.enabled)
+                    }
+                }
+
+                Button("settings.debug.restart_onboarding") {
+                    settings.resetOnboardingPreferences()
+                    Task { await session.debugRestartOnboarding() }
+                }
+
+                Button("settings.debug.activate_demo_partner") {
+                    guard let userID = session.user?.id else { return }
+                    relationshipStore.activateDemoRelationship(
+                        currentUserID: userID,
+                        locale: settings.language.locale
+                    )
+                }
+
+                Button(
+                    "settings.debug.reset_pairing",
+                    role: .destructive,
+                    action: resetDebugPairing
+                )
+            }
+            #endif
+
             Section("settings.about.section") {
                 LabeledContent("settings.about.beta") {
                     Text("settings.about.free")
@@ -91,7 +115,7 @@ struct SettingsView: View {
         }
         .scrollContentBackground(.hidden)
         .background(AvenBackground())
-        .tint(settings.theme.palette.accent)
+        .tint(PremiumArrivalStyle.pinkInk)
         .navigationTitle(Text("settings.title"))
         .confirmationDialog(
             Text("settings.delete.confirm.title"),
@@ -125,6 +149,18 @@ struct SettingsView: View {
         components.path = BrandConfiguration.current.supportEmail
         return components.url ?? BrandConfiguration.current.websiteURL
     }
+
+    #if DEBUG
+    private func resetDebugPairing() {
+        relationshipStore.reset()
+        guard let user = session.user else { return }
+        relationshipStore.prepare(
+            for: user,
+            profile: session.profile,
+            locale: settings.language.locale
+        )
+    }
+    #endif
 }
 
 private struct PrivacyControlsView: View {
@@ -134,6 +170,11 @@ private struct PrivacyControlsView: View {
     var body: some View {
         Form {
             Section {
+                permissionRow(
+                    "settings.privacy.notifications",
+                    status: permissions.notifications,
+                    icon: "bell.badge.fill"
+                )
                 permissionRow(
                     "settings.privacy.photos",
                     status: permissions.photos,
@@ -155,6 +196,20 @@ private struct PrivacyControlsView: View {
                     icon: "mic.fill"
                 )
 
+                Button("settings.privacy.request_notifications") {
+                    Task {
+                        await NotificationAuthorizationClient.requestIfNeeded()
+                        await permissions.refresh()
+                    }
+                }
+
+                Button("settings.privacy.request_location") {
+                    Task {
+                        await LocationAuthorizationClient.requestAlwaysPreciseIfNeeded()
+                        await permissions.refresh()
+                    }
+                }
+
                 Button("settings.privacy.open_settings") {
                     guard let url = URL(string: UIApplication.openSettingsURLString) else {
                         return
@@ -172,11 +227,11 @@ private struct PrivacyControlsView: View {
         }
         .navigationTitle(Text("settings.privacy.controls"))
         .task {
-            permissions.refresh()
+            await permissions.refresh()
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
-                permissions.refresh()
+                Task { await permissions.refresh() }
             }
         }
     }
@@ -224,8 +279,9 @@ private final class PermissionStatusStore {
     var calendar: PermissionStatus = .notRequested
     var location: PermissionStatus = .notRequested
     var microphone: PermissionStatus = .notRequested
+    var notifications: PermissionStatus = .notRequested
 
-    func refresh() {
+    func refresh() async {
         photos = Self.photosStatus(
             PHPhotoLibrary.authorizationStatus(for: .readWrite)
         )
@@ -236,6 +292,9 @@ private final class PermissionStatusStore {
         microphone = Self.microphoneStatus(
             AVAudioApplication.shared.recordPermission
         )
+        let notificationSettings = await UNUserNotificationCenter.current()
+            .notificationSettings()
+        notifications = Self.notificationStatus(notificationSettings.authorizationStatus)
     }
 
     private static func photosStatus(_ status: PHAuthorizationStatus) -> PermissionStatus {
@@ -277,6 +336,17 @@ private final class PermissionStatusStore {
         case .granted: .enabled
         case .denied: .denied
         case .undetermined: .notRequested
+        @unknown default: .notRequested
+        }
+    }
+
+    private static func notificationStatus(
+        _ status: UNAuthorizationStatus
+    ) -> PermissionStatus {
+        switch status {
+        case .authorized, .provisional, .ephemeral: .enabled
+        case .denied: .denied
+        case .notDetermined: .notRequested
         @unknown default: .notRequested
         }
     }

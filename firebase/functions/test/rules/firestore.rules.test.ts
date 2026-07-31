@@ -134,6 +134,15 @@ afterAll(async () => {
 });
 
 describe("Firestore relationship boundaries", () => {
+  it("allows a signed-in user to bootstrap only their own missing profile", async () => {
+    const alice = testEnvironment
+      .authenticatedContext("alice")
+      .firestore();
+
+    await assertSucceeds(getDoc(doc(alice, "users/alice")));
+    await assertFails(getDoc(doc(alice, "users/bob")));
+  });
+
   it("allows a valid member and denies a non-member", async () => {
     await seedRelationship();
     const alice = testEnvironment

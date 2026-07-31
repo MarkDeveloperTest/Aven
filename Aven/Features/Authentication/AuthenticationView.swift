@@ -7,83 +7,108 @@ import UIKit
 struct AuthenticationView: View {
     @Environment(AppSession.self) private var session
     @State private var currentNonce: String?
+    let isEmbedded: Bool
+
+    init(isEmbedded: Bool = false) {
+        self.isEmbedded = isEmbedded
+    }
 
     var body: some View {
-        ZStack {
-            PremiumArrivalBackground()
+        Group {
+            if isEmbedded {
+                authenticationContent
+            } else {
+                ZStack {
+                    PremiumArrivalBackground()
 
-            VStack(alignment: .leading, spacing: 0) {
-                PremiumArrivalWordmark()
-                    .padding(.top, 28)
+                    VStack(alignment: .leading, spacing: 0) {
+                        PremiumArrivalWordmark()
+                            .padding(.top, 28)
 
-                VStack(alignment: .leading, spacing: 22) {
-                    Text("auth.premium.title")
-                        .font(.system(size: 44, weight: .regular, design: .serif))
-                        .tracking(-1.1)
-                        .foregroundStyle(PremiumArrivalStyle.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityIdentifier("auth.welcome.title")
-
-                    Text("auth.welcome.subtitle")
-                        .font(.body)
-                        .lineSpacing(3)
-                        .foregroundStyle(PremiumArrivalStyle.mutedInk)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(.top, 92)
-
-                Spacer(minLength: 28)
-
-                VStack(spacing: 14) {
-                    SignInWithAppleButton(.continue) { request in
-                        prepareAppleRequest(request)
-                    } onCompletion: { result in
-                        handleAppleResult(result)
+                        authenticationContent
                     }
-                    .signInWithAppleButtonStyle(.black)
-                    .frame(height: 56)
-                    .clipShape(.rect(cornerRadius: 10, style: .continuous))
-                    .allowsHitTesting(session.isWorking == false)
-                    .opacity(session.isWorking ? 0.55 : 1)
-                    .accessibilityIdentifier("auth.apple")
-
-                    if AppBuildEnvironment.current.supportsGoogleAuthentication {
-                        Button {
-                            Task { await signInWithGoogle() }
-                        } label: {
-                            Label("auth.google", systemImage: "g.circle.fill")
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(PremiumArrivalStyle.ink)
-                                .frame(maxWidth: .infinity)
-                                .frame(minHeight: 54)
-                        }
-                        .background(Color.white.opacity(0.72))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .stroke(PremiumArrivalStyle.ink, lineWidth: 1)
-                        }
-                        .disabled(session.isWorking)
-                        .accessibilityIdentifier("auth.google")
-                    }
+                    .padding(.horizontal, 30)
+                    .padding(.bottom, 20)
+                    .frame(maxWidth: 560)
+                    .frame(maxWidth: .infinity)
                 }
-
-                Label("privacy.private_space", systemImage: "lock.fill")
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(PremiumArrivalStyle.mutedInk)
-                    .padding(.top, 24)
-
-                Text("auth.legal")
-                    .font(.caption)
-                    .foregroundStyle(PremiumArrivalStyle.mutedInk)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 10)
             }
-            .padding(.horizontal, 30)
-            .padding(.bottom, 20)
-            .frame(maxWidth: 560)
-            .frame(maxWidth: .infinity)
         }
         .preferredColorScheme(.light)
+    }
+
+    private var authenticationContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if isEmbedded == false {
+                Spacer(minLength: 28)
+            }
+
+            VStack(alignment: .leading, spacing: 22) {
+                Text("auth.premium.title")
+                    .font(.system(size: 44, weight: .regular, design: .serif))
+                    .tracking(-1.1)
+                    .foregroundStyle(PremiumArrivalStyle.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("auth.welcome.title")
+
+                Text("auth.welcome.subtitle")
+                    .font(.body)
+                    .lineSpacing(3)
+                    .foregroundStyle(PremiumArrivalStyle.mutedInk)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, isEmbedded ? 0 : 92)
+
+            Spacer(minLength: 28)
+
+            authenticationButtons
+
+            Label("privacy.private_space", systemImage: "lock.fill")
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(PremiumArrivalStyle.mutedInk)
+                .padding(.top, 24)
+
+            Text("auth.legal")
+                .font(.caption)
+                .foregroundStyle(PremiumArrivalStyle.mutedInk)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 10)
+        }
+    }
+
+    private var authenticationButtons: some View {
+        VStack(spacing: 14) {
+            SignInWithAppleButton(.continue) { request in
+                prepareAppleRequest(request)
+            } onCompletion: { result in
+                handleAppleResult(result)
+            }
+            .signInWithAppleButtonStyle(.black)
+            .frame(height: 56)
+            .clipShape(.rect(cornerRadius: 10, style: .continuous))
+            .allowsHitTesting(session.isWorking == false)
+            .opacity(session.isWorking ? 0.55 : 1)
+            .accessibilityIdentifier("auth.apple")
+
+            if AppBuildEnvironment.current.supportsGoogleAuthentication {
+                Button {
+                    Task { await signInWithGoogle() }
+                } label: {
+                    Label("auth.google", systemImage: "g.circle.fill")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(PremiumArrivalStyle.ink)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 54)
+                }
+                .background(Color.white.opacity(0.72))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(PremiumArrivalStyle.ink, lineWidth: 1)
+                }
+                .disabled(session.isWorking)
+                .accessibilityIdentifier("auth.google")
+            }
+        }
     }
 
     private func prepareAppleRequest(_ request: ASAuthorizationAppleIDRequest) {

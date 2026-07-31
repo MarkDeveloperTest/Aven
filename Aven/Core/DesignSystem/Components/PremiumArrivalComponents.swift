@@ -77,6 +77,7 @@ struct PremiumPrimaryButton: View {
 
 struct PremiumArrivalScaffold<Content: View>: View {
     let primaryTitle: LocalizedStringResource
+    let showsPrimaryAction: Bool
     let showsBack: Bool
     let isLoading: Bool
     let primaryAction: () -> Void
@@ -85,6 +86,7 @@ struct PremiumArrivalScaffold<Content: View>: View {
 
     init(
         primaryTitle: LocalizedStringResource = "action.continue",
+        showsPrimaryAction: Bool = true,
         showsBack: Bool,
         isLoading: Bool = false,
         primaryAction: @escaping () -> Void,
@@ -92,6 +94,7 @@ struct PremiumArrivalScaffold<Content: View>: View {
         @ViewBuilder content: () -> Content
     ) {
         self.primaryTitle = primaryTitle
+        self.showsPrimaryAction = showsPrimaryAction
         self.showsBack = showsBack
         self.isLoading = isLoading
         self.primaryAction = primaryAction
@@ -123,12 +126,14 @@ struct PremiumArrivalScaffold<Content: View>: View {
         .foregroundStyle(PremiumArrivalStyle.ink)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 4) {
-                PremiumPrimaryButton(
-                    primaryTitle,
-                    isLoading: isLoading,
-                    action: primaryAction
-                )
-                .accessibilityIdentifier("onboarding.continue")
+                if showsPrimaryAction {
+                    PremiumPrimaryButton(
+                        primaryTitle,
+                        isLoading: isLoading,
+                        action: primaryAction
+                    )
+                    .accessibilityIdentifier("onboarding.continue")
+                }
 
                 if showsBack {
                     Button("action.back", action: backAction)

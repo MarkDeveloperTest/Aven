@@ -62,6 +62,8 @@ struct UsView: View {
             }
         }
         .navigationTitle(Text("tab.us"))
+        .scrollContentBackground(.hidden)
+        .background(AvenBackground())
     }
 
     private var insightCard: some View {

@@ -31,7 +31,7 @@ struct HomeView: View {
         HStack(spacing: AvenSpacing.medium) {
             ZStack {
                 Circle()
-                    .fill(settings.theme.palette.accent.gradient)
+                    .fill(settings.theme.palette.accent)
                 Text(initials)
                     .font(.headline.bold())
                     .foregroundStyle(.white)
@@ -71,8 +71,13 @@ struct HomeView: View {
                         Text("home.partner.title")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
-                        Text(verbatim: store.relationship.partnerName ?? "")
-                            .font(.title.bold())
+                        if let partnerName = store.relationship.partnerName {
+                            Text(verbatim: partnerName)
+                                .font(.title.bold())
+                        } else {
+                            Text("home.partner.fallback")
+                                .font(.title.bold())
+                        }
                     }
                     Spacer()
                     Image(systemName: "heart.circle.fill")
@@ -159,57 +164,11 @@ struct HomeView: View {
 
     private var pairingDashboard: some View {
         GlassCard {
-            VStack(alignment: .leading, spacing: AvenSpacing.large) {
-                Image(systemName: "person.2.badge.plus")
-                    .font(.system(size: 44))
-                    .foregroundStyle(settings.theme.palette.accent)
-
-                VStack(alignment: .leading, spacing: AvenSpacing.small) {
-                    Text("pairing.title")
-                        .font(.title.bold())
-                    Text("pairing.message")
-                        .foregroundStyle(.secondary)
-                }
-
-                if store.relationship.status == .invitationPending,
-                   let inviteCode = store.relationship.inviteCode {
-                    VStack(spacing: AvenSpacing.small) {
-                        Text("pairing.code.label")
-                            .font(.caption.weight(.semibold))
-                        Text(verbatim: inviteCode)
-                            .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                            .tracking(5)
-                            .textSelection(.enabled)
-                            .accessibilityLabel(Text("pairing.code.accessibility"))
-                            .accessibilityValue(Text(verbatim: inviteCode))
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    HStack {
-                        Button("pairing.revoke", role: .destructive) {
-                            store.revokeInvitation()
-                        }
-                        Spacer()
-                        Button("pairing.demo_redeem") {
-                            if let userID = session.user?.id {
-                                store.activateDemoRelationship(
-                                    currentUserID: userID,
-                                    locale: settings.language.locale
-                                )
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
-                    }
-                } else {
-                    PrimaryActionButton("pairing.create", systemImage: "link.badge.plus") {
-                        store.createInvitation()
-                    }
-                }
-
-                Text("pairing.server_note")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            CouplePairingView(
+                presentation: .dashboard,
+                relationshipType: session.profile?.relationshipType ?? .unspecified,
+                relationshipStartDate: session.profile?.relationshipStartDate
+            )
         }
         .foregroundStyle(.primary)
     }

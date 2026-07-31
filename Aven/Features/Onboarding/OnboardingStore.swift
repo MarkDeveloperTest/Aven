@@ -8,12 +8,15 @@ final class OnboardingStore {
         case privacy
         case displayName = "display-name"
         case birthDate = "birth-date"
+        case gender
         case countryRegion = "country-region"
         case relationshipType = "relationship-type"
         case relationshipStartDate = "relationship-start-date"
         case notifications
         case notificationPreviews = "notification-previews"
+        case preciseLocation = "precise-location"
         case aiPreference = "ai-preference"
+        case pairing
         case finish
 
         nonisolated static func migratedLegacyOrdinal(_ ordinal: Int) -> Step {
@@ -32,19 +35,23 @@ final class OnboardingStore {
         static let step = "step"
         static let displayName = "display-name"
         static let dateOfBirth = "date-of-birth"
+        static let gender = "gender"
         static let countryCode = "country-code"
         static let relationshipType = "relationship-type"
         static let relationshipStartDate = "relationship-start-date"
         static let wantsNotifications = "wants-notifications"
+        static let wantsPreciseLocation = "wants-precise-location"
 
         static let all = [
             step,
             displayName,
             dateOfBirth,
+            gender,
             countryCode,
             relationshipType,
             relationshipStartDate,
             wantsNotifications,
+            wantsPreciseLocation,
         ]
     }
 
@@ -59,6 +66,16 @@ final class OnboardingStore {
     }
     var dateOfBirth: Date {
         didSet { persist(dateOfBirth.timeIntervalSince1970, for: Key.dateOfBirth) }
+    }
+    var gender: Gender? {
+        didSet {
+            guard let storageKey = storageKey(for: Key.gender) else { return }
+            if let gender {
+                defaults.set(gender.rawValue, forKey: storageKey)
+            } else {
+                defaults.removeObject(forKey: storageKey)
+            }
+        }
     }
     var countryCode: String {
         didSet { persist(countryCode, for: Key.countryCode) }
@@ -79,6 +96,9 @@ final class OnboardingStore {
     var wantsNotifications: Bool {
         didSet { persist(wantsNotifications, for: Key.wantsNotifications) }
     }
+    var wantsPreciseLocation: Bool {
+        didSet { persist(wantsPreciseLocation, for: Key.wantsPreciseLocation) }
+    }
     var validationError: AppError?
 
     init(defaults: UserDefaults = .standard) {
@@ -86,10 +106,12 @@ final class OnboardingStore {
         step = .privacy
         displayName = ""
         dateOfBirth = Calendar.current.date(byAdding: .year, value: -18, to: .now) ?? .now
+        gender = nil
         countryCode = Locale.current.region?.identifier ?? "GB"
         relationshipType = .dating
-        relationshipStartDate = nil
+        relationshipStartDate = .now
         wantsNotifications = false
+        wantsPreciseLocation = false
     }
 
     var canGoBack: Bool {
@@ -109,6 +131,9 @@ final class OnboardingStore {
         } else {
             dateOfBirth = Calendar.current.date(byAdding: .year, value: -18, to: .now) ?? .now
         }
+        gender = defaults.string(
+            forKey: requiredStorageKey(for: Key.gender)
+        ).flatMap(Gender.init(rawValue:))
         countryCode = defaults.string(
             forKey: requiredStorageKey(for: Key.countryCode)
         ) ?? countryCode
@@ -123,14 +148,29 @@ final class OnboardingStore {
         ) as? TimeInterval {
             relationshipStartDate = Date(timeIntervalSince1970: timestamp)
         } else {
-            relationshipStartDate = nil
+            relationshipStartDate = .now
         }
         wantsNotifications = defaults.object(
             forKey: requiredStorageKey(for: Key.wantsNotifications)
         ) as? Bool ?? false
+        wantsPreciseLocation = defaults.object(
+            forKey: requiredStorageKey(for: Key.wantsPreciseLocation)
+        ) as? Bool ?? false
 
         if step == .notificationPreviews, wantsNotifications == false {
-            step = .aiPreference
+            step = .preciseLocation
+        }
+        if gender == nil,
+           let currentIndex = Step.allCases.firstIndex(of: step),
+           let genderIndex = Step.allCases.firstIndex(of: .gender),
+           currentIndex > genderIndex {
+            step = .gender
+        }
+        if relationshipStartDate == nil,
+           let currentIndex = Step.allCases.firstIndex(of: step),
+           let relationshipDateIndex = Step.allCases.firstIndex(of: .relationshipStartDate),
+           currentIndex > relationshipDateIndex {
+            step = .relationshipStartDate
         }
     }
 
@@ -143,8 +183,10 @@ final class OnboardingStore {
             step = .privacy
         case .birthDate:
             step = .displayName
-        case .countryRegion:
+        case .gender:
             step = .birthDate
+        case .countryRegion:
+            step = .gender
         case .relationshipType:
             step = .countryRegion
         case .relationshipStartDate:
@@ -153,10 +195,14 @@ final class OnboardingStore {
             step = .relationshipStartDate
         case .notificationPreviews:
             step = .notifications
-        case .aiPreference:
+        case .preciseLocation:
             step = wantsNotifications ? .notificationPreviews : .notifications
-        case .finish:
+        case .aiPreference:
+            step = .preciseLocation
+        case .pairing:
             step = .aiPreference
+        case .finish:
+            step = .pairing
         }
     }
 
@@ -175,18 +221,32 @@ final class OnboardingStore {
             displayName = trimmedName
             step = .birthDate
         case .birthDate:
+            step = .gender
+        case .gender:
+            guard gender != nil else {
+                validationError = .validation(.gender)
+                return
+            }
             step = .countryRegion
         case .countryRegion:
             step = .relationshipType
         case .relationshipType:
             step = .relationshipStartDate
         case .relationshipStartDate:
+            guard relationshipStartDate != nil else {
+                validationError = .validation(.relationshipStartDate)
+                return
+            }
             step = .notifications
         case .notifications:
-            step = wantsNotifications ? .notificationPreviews : .aiPreference
+            step = wantsNotifications ? .notificationPreviews : .preciseLocation
         case .notificationPreviews:
+            step = .preciseLocation
+        case .preciseLocation:
             step = .aiPreference
         case .aiPreference:
+            step = .pairing
+        case .pairing:
             step = .finish
         case .finish:
             return
@@ -198,6 +258,12 @@ final class OnboardingStore {
         guard trimmedName.count >= 2 else {
             throw AppError.validation(.displayName)
         }
+        guard let gender else {
+            throw AppError.validation(.gender)
+        }
+        guard let relationshipStartDate else {
+            throw AppError.validation(.relationshipStartDate)
+        }
         return UserProfile(
             userID: userID,
             displayName: trimmedName,
@@ -205,16 +271,26 @@ final class OnboardingStore {
             countryCode: countryCode,
             timeZoneIdentifier: TimeZone.current.identifier,
             relationshipType: relationshipType,
-            relationshipStartDate: relationshipStartDate
+            relationshipStartDate: relationshipStartDate,
+            gender: gender
         )
     }
 
     func resetProgress() {
-        guard ownerUserID != nil else { return }
+        guard let ownerUserID else { return }
+        Self.clearProgress(for: ownerUserID, defaults: defaults)
+        self.ownerUserID = nil
+    }
+
+    static func clearProgress(
+        for userID: String,
+        defaults: UserDefaults = .standard
+    ) {
         for key in Key.all {
-            defaults.removeObject(forKey: requiredStorageKey(for: key))
+            defaults.removeObject(
+                forKey: "aven.onboarding.\(userID).\(key)"
+            )
         }
-        ownerUserID = nil
     }
 
     private func restoredStep() -> Step {

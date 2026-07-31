@@ -248,6 +248,8 @@ app_settings = {
   # Base usage descriptions are localized by Aven/Resources/InfoPlist.xcstrings.
   "INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription" =>
     "Aven can add plans you explicitly choose to your selected calendar.",
+  "INFOPLIST_KEY_NSCameraUsageDescription" =>
+    "Aven uses the camera only to scan your partner's private pairing QR code.",
   "INFOPLIST_KEY_NSFaceIDUsageDescription" =>
     "Use Face ID to protect private relationship content in Aven.",
   "INFOPLIST_KEY_NSLocationWhenInUseUsageDescription" =>

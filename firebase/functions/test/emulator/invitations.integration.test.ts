@@ -40,7 +40,13 @@ async function clearFirestore(): Promise<void> {
 }
 
 async function seedUser(userId: string): Promise<void> {
+  const displayNames: Record<string, string> = {
+    alice: "Alice",
+    bob: "Bob",
+    charlie: "Charlie"
+  };
   await db.doc(`users/${userId}`).set({
+    displayName: displayNames[userId],
     accountState: "active",
     activeRelationshipId: null,
     archivedRelationshipIds: [],
@@ -114,18 +120,76 @@ describe("invitation redemption transaction", () => {
       result as {relationshipId: string}
     ).relationshipId;
 
-    const [redeemed, creatorPending, redeemerPending, unrelated] =
+    const [
+      redeemed,
+      creatorPending,
+      redeemerPending,
+      unrelated,
+      relationship,
+      creatorMember,
+      redeemerMember,
+      creatorUser,
+      redeemerUser,
+      unrelatedUser,
+      creatorIndex,
+      redeemerIndex
+    ] =
       await Promise.all([
         db.doc(`invitations/${invitationId}`).get(),
         db.doc(`invitations/${"b".repeat(40)}`).get(),
         db.doc(`invitations/${"c".repeat(40)}`).get(),
-        db.doc(`invitations/${"d".repeat(40)}`).get()
+        db.doc(`invitations/${"d".repeat(40)}`).get(),
+        db.doc(`relationships/${relationshipId}`).get(),
+        db.doc(`relationships/${relationshipId}/members/alice`).get(),
+        db.doc(`relationships/${relationshipId}/members/bob`).get(),
+        db.doc("users/alice").get(),
+        db.doc("users/bob").get(),
+        db.doc("users/charlie").get(),
+        db.doc(
+          `userRelationshipIndex/alice/relationships/${relationshipId}`
+        ).get(),
+        db.doc(
+          `userRelationshipIndex/bob/relationships/${relationshipId}`
+        ).get()
       ]);
     expect(redeemed.get("status")).toBe("redeemed");
     expect(redeemed.get("relationshipId")).toBe(relationshipId);
     expect(creatorPending.get("status")).toBe("revoked");
     expect(redeemerPending.get("status")).toBe("revoked");
     expect(unrelated.get("status")).toBe("pending");
+    expect(relationship.data()).toMatchObject({
+      memberIds: ["alice", "bob"],
+      memberDisplayNames: {
+        alice: "Alice",
+        bob: "Bob"
+      },
+      status: "active",
+      sourceInvitationId: invitationId,
+      schemaVersion: 1
+    });
+    expect(creatorMember.data()).toMatchObject({
+      userId: "alice",
+      role: "member",
+      schemaVersion: 1
+    });
+    expect(redeemerMember.data()).toMatchObject({
+      userId: "bob",
+      role: "member",
+      schemaVersion: 1
+    });
+    expect(creatorUser.get("activeRelationshipId")).toBe(relationshipId);
+    expect(redeemerUser.get("activeRelationshipId")).toBe(relationshipId);
+    expect(unrelatedUser.get("activeRelationshipId")).toBeNull();
+    expect(creatorIndex.data()).toMatchObject({
+      relationshipId,
+      status: "active",
+      schemaVersion: 1
+    });
+    expect(redeemerIndex.data()).toMatchObject({
+      relationshipId,
+      status: "active",
+      schemaVersion: 1
+    });
 
     const replay = await redeemInvitation.run(
       callableRequest("bob", {

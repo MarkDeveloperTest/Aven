@@ -11,7 +11,7 @@ struct RootView: View {
             case .launching:
                 LaunchView()
             case .signedOut:
-                AuthenticationView()
+                OnboardingFlowView()
             case .onboarding:
                 OnboardingFlowView()
             case .authenticated:
@@ -20,6 +20,7 @@ struct RootView: View {
         }
         .animation(reduceMotion ? nil : .snappy, value: session.phase)
         .environment(\.locale, settings.language.locale)
+        .preferredColorScheme(.light)
         .alert(
             Text("error.title"),
             isPresented: Binding(

@@ -40,9 +40,16 @@ enum FirebaseBootstrap {
             return .unavailable
         }
 
+        #if DEBUG
+        // Pairing callables enforce App Check. Debug builds use Firebase's
+        // per-installation debug token, which must be allow-listed in the
+        // development Firebase project before live calls can succeed.
+        AppCheck.setAppCheckProviderFactory(AppCheckDebugProviderFactory())
+        #else
         if buildEnvironment == .production {
             AppCheck.setAppCheckProviderFactory(AppAttestProviderFactory())
         }
+        #endif
 
         FirebaseApp.configure(options: options)
         AppLogger.application.notice("Firebase configured with validated local options")

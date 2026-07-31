@@ -14,6 +14,7 @@ struct OnboardingFlowView: View {
             primaryTitle: store.step == .finish
                 ? "onboarding.finish.action"
                 : "action.continue",
+            showsPrimaryAction: store.step != .finish || session.user != nil,
             showsBack: store.canGoBack,
             isLoading: session.isWorking,
             primaryAction: {
@@ -26,11 +27,9 @@ struct OnboardingFlowView: View {
                 .transition(screenTransition)
                 .accessibilityIdentifier("onboarding.screen.\(store.step.rawValue)")
         }
-        .task(id: session.user?.id) {
-            if let userID = session.user?.id {
-                store.attach(to: userID)
-                settings.language = AppLanguage.inferred(fromRegionCode: store.countryCode)
-            }
+        .task(id: session.onboardingDraftUserID) {
+            store.attach(to: session.onboardingDraftUserID)
+            settings.language = AppLanguage.inferred(fromRegionCode: store.countryCode)
         }
         .onChange(of: store.step) { _, _ in
             isNameFocused = false
@@ -46,6 +45,8 @@ struct OnboardingFlowView: View {
             displayNameScreen
         case .birthDate:
             birthDateScreen
+        case .gender:
+            genderScreen
         case .countryRegion:
             countryScreen
         case .relationshipType:
@@ -56,8 +57,12 @@ struct OnboardingFlowView: View {
             notificationsScreen
         case .notificationPreviews:
             notificationPreviewsScreen
+        case .preciseLocation:
+            preciseLocationScreen
         case .aiPreference:
             aiPreferenceScreen
+        case .pairing:
+            pairingScreen
         case .finish:
             finishScreen
         }
@@ -71,7 +76,7 @@ struct OnboardingFlowView: View {
     }
 
     private var displayNameScreen: some View {
-        VStack(alignment: .leading, spacing: 72) {
+        VStack(alignment: .leading, spacing: 34) {
             PremiumArrivalHeading(
                 title: "onboarding.name.title",
                 message: "onboarding.name.message"
@@ -148,6 +153,38 @@ struct OnboardingFlowView: View {
         }
     }
 
+    private var genderScreen: some View {
+        VStack(alignment: .leading, spacing: 34) {
+            PremiumArrivalHeading(
+                title: "onboarding.gender.title",
+                message: "onboarding.gender.message"
+            )
+
+            VStack(spacing: 0) {
+                ForEach(Gender.allCases) { gender in
+                    choiceRow(
+                        title: gender.localizedResource,
+                        isSelected: store.gender == gender
+                    ) {
+                        Haptics.selection()
+                        store.gender = gender
+                        store.validationError = nil
+                    }
+                    .accessibilityIdentifier(
+                        "onboarding.gender.\(gender.rawValue)"
+                    )
+
+                    if gender != Gender.allCases.last {
+                        Divider().overlay(PremiumArrivalStyle.divider)
+                    }
+                }
+
+                inlineValidation
+                    .padding(.top, 12)
+            }
+        }
+    }
+
     private var relationshipTypeScreen: some View {
         VStack(alignment: .leading, spacing: 34) {
             PremiumArrivalHeading(
@@ -180,41 +217,16 @@ struct OnboardingFlowView: View {
                 message: "onboarding.relationship_date.message"
             )
 
-            if store.relationshipStartDate == nil {
-                choiceRow(
-                    title: "onboarding.relationship_date.add",
-                    isSelected: false
-                ) {
-                    Haptics.selection()
-                    withAnimation(reduceMotion ? nil : .smooth(duration: 0.28)) {
-                        store.relationshipStartDate = .now
-                    }
-                }
-            } else {
-                VStack(alignment: .leading, spacing: 20) {
-                    DatePicker(
-                        "onboarding.relationship.start_date",
-                        selection: relationshipStartDateBinding,
-                        in: ...Date.now,
-                        displayedComponents: .date
-                    )
-                    .datePickerStyle(.wheel)
-                    .labelsHidden()
-                    .frame(maxWidth: .infinity)
-                    .tint(PremiumArrivalStyle.pinkInk)
-
-                    Button("onboarding.relationship_date.remove") {
-                        Haptics.selection()
-                        withAnimation(reduceMotion ? nil : .smooth(duration: 0.28)) {
-                            store.relationshipStartDate = nil
-                        }
-                    }
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(PremiumArrivalStyle.mutedInk)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
+            DatePicker(
+                "onboarding.relationship.start_date",
+                selection: relationshipStartDateBinding,
+                in: ...Date.now,
+                displayedComponents: .date
+            )
+            .datePickerStyle(.wheel)
+            .labelsHidden()
+            .frame(maxWidth: .infinity)
+            .tint(PremiumArrivalStyle.pinkInk)
         }
     }
 
@@ -232,6 +244,7 @@ struct OnboardingFlowView: View {
                 ) {
                     Haptics.selection()
                     store.wantsNotifications = true
+                    Task { await NotificationAuthorizationClient.requestIfNeeded() }
                 }
 
                 Divider().overlay(PremiumArrivalStyle.divider)
@@ -276,6 +289,35 @@ struct OnboardingFlowView: View {
         }
     }
 
+    private var preciseLocationScreen: some View {
+        VStack(alignment: .leading, spacing: 34) {
+            PremiumArrivalHeading(
+                title: "onboarding.location.title",
+                message: "onboarding.location.message"
+            )
+
+            VStack(spacing: 0) {
+                choiceRow(
+                    title: "onboarding.location.enable",
+                    isSelected: store.wantsPreciseLocation
+                ) {
+                    Haptics.selection()
+                    store.wantsPreciseLocation = true
+                }
+
+                Divider().overlay(PremiumArrivalStyle.divider)
+
+                choiceRow(
+                    title: "onboarding.option.not_now",
+                    isSelected: store.wantsPreciseLocation == false
+                ) {
+                    Haptics.selection()
+                    store.wantsPreciseLocation = false
+                }
+            }
+        }
+    }
+
     private var aiPreferenceScreen: some View {
         VStack(alignment: .leading, spacing: 34) {
             PremiumArrivalHeading(
@@ -305,23 +347,35 @@ struct OnboardingFlowView: View {
         }
     }
 
+    private var pairingScreen: some View {
+        CouplePairingView(
+            presentation: .onboarding,
+            relationshipType: store.relationshipType,
+            relationshipStartDate: store.relationshipStartDate
+        )
+    }
+
     private var finishScreen: some View {
         VStack(alignment: .leading, spacing: 28) {
-            PremiumArrivalHeading(
-                title: "onboarding.finish.title",
-                message: "onboarding.finish.message"
-            )
+            if session.user == nil {
+                AuthenticationView(isEmbedded: true)
+            } else {
+                PremiumArrivalHeading(
+                    title: "onboarding.finish.title",
+                    message: "onboarding.finish.message"
+                )
 
-            if store.displayName.isEmpty == false {
-                Text(verbatim: store.displayName)
-                    .font(.title3.weight(.medium))
-                    .foregroundStyle(PremiumArrivalStyle.pinkInk)
+                if store.displayName.isEmpty == false {
+                    Text(verbatim: store.displayName)
+                        .font(.title3.weight(.medium))
+                        .foregroundStyle(PremiumArrivalStyle.pinkInk)
+                }
+
+                Label("privacy.private_space", systemImage: "lock.fill")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(PremiumArrivalStyle.mutedInk)
+                    .padding(.top, 8)
             }
-
-            Label("privacy.private_space", systemImage: "lock.fill")
-                .font(.footnote.weight(.medium))
-                .foregroundStyle(PremiumArrivalStyle.mutedInk)
-                .padding(.top, 8)
         }
     }
 
@@ -416,6 +470,9 @@ struct OnboardingFlowView: View {
         withAnimation(reduceMotion ? nil : .smooth(duration: 0.42)) {
             store.goForward()
         }
+        if previousStep == .preciseLocation, store.wantsPreciseLocation {
+            Task { await LocationAuthorizationClient.requestAlwaysPreciseIfNeeded() }
+        }
         if store.step == previousStep, store.validationError != nil {
             Haptics.error()
         }
@@ -439,14 +496,10 @@ struct OnboardingFlowView: View {
 
         do {
             let profile = try store.makeProfile(userID: user.id)
-            let wantsNotifications = store.wantsNotifications
             Haptics.success()
             Task {
                 await session.completeOnboarding(with: profile)
                 if session.phase == .authenticated {
-                    if wantsNotifications {
-                        await NotificationAuthorizationClient.requestIfNeeded()
-                    }
                     store.resetProgress()
                 }
             }

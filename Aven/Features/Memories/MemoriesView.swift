@@ -27,6 +27,7 @@ struct MemoriesView: View {
             }
         }
         .navigationTitle(Text("tab.memories"))
+        .background(AvenBackground())
         .toolbar {
             if store.isActive {
                 ToolbarItem(placement: .primaryAction) {
@@ -79,7 +80,7 @@ struct MemoriesView: View {
             }
             .padding(.vertical, AvenSpacing.medium)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(AvenBackground())
     }
 
     private func importSelectedPhoto() async {

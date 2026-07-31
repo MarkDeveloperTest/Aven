@@ -4,6 +4,8 @@ import Observation
 @MainActor
 @Observable
 final class AppSession {
+    static let localOnboardingDraftUserID = "local-onboarding-draft"
+
     nonisolated enum Phase: Equatable, Sendable {
         case launching
         case signedOut
@@ -18,6 +20,13 @@ final class AppSession {
     var profile: UserProfile?
     var presentedError: AppError?
     var isWorking = false
+
+    /// Before sign-in, onboarding is intentionally stored only on this device.
+    /// Once it is completed the draft is removed, rather than being attached to
+    /// an account before the user has chosen to authenticate.
+    var onboardingDraftUserID: String {
+        Self.localOnboardingDraftUserID
+    }
 
     init(environment: AppEnvironment) {
         self.environment = environment
@@ -63,7 +72,7 @@ final class AppSession {
         }
 
         guard let currentUser = await environment.authenticationRepository.currentUser() else {
-            phase = .signedOut
+            phase = .onboarding
             return
         }
 
@@ -106,9 +115,10 @@ final class AppSession {
         defer { isWorking = false }
         do {
             try await environment.authenticationRepository.signOut()
+            OnboardingStore.clearProgress(for: Self.localOnboardingDraftUserID)
             user = nil
             profile = nil
-            phase = .signedOut
+            phase = .onboarding
         } catch {
             AppLogger.authentication.error("Sign out failed")
             presentedError = .unknown
@@ -124,9 +134,10 @@ final class AppSession {
                 try await environment.profileRepository.deleteProfile(for: user.id)
             }
             try await environment.authenticationRepository.deleteCurrentAccount()
+            OnboardingStore.clearProgress(for: Self.localOnboardingDraftUserID)
             self.user = nil
             profile = nil
-            phase = .signedOut
+            phase = .onboarding
         } catch {
             AppLogger.authentication.error("Account deletion failed")
             presentedError = .unknown
@@ -140,6 +151,25 @@ final class AppSession {
     func present(_ error: AppError) {
         presentedError = error
     }
+
+    #if DEBUG
+    func debugRestartOnboarding() async {
+        let userID = user?.id
+        OnboardingStore.clearProgress(for: Self.localOnboardingDraftUserID)
+        if let userID {
+            OnboardingStore.clearProgress(for: userID)
+        }
+        profile = nil
+        presentedError = nil
+        do {
+            try await environment.authenticationRepository.signOut()
+            user = nil
+        } catch {
+            AppLogger.authentication.error("Debug onboarding reset could not sign out")
+        }
+        phase = .onboarding
+    }
+    #endif
 
     private func performAuthentication(
         _ operation: () async throws -> AuthenticatedUser

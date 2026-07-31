@@ -47,12 +47,19 @@ final class AppSettings {
         language = AppLanguage(
             rawValue: defaults.string(forKey: Key.language) ?? ""
         ) ?? AppLanguage.inferred(from: locale)
-        theme = AvenTheme(rawValue: defaults.string(forKey: Key.theme) ?? "") ?? .aven
+        theme = .minimal
+        defaults.set(AvenTheme.minimal.rawValue, forKey: Key.theme)
         let persistedAIEnabled = defaults.object(forKey: Key.aiEnabled) as? Bool ?? false
         aiEnabled = persistedAIEnabled
         relationshipScoreEnabled = persistedAIEnabled
             ? defaults.object(forKey: Key.relationshipScoreEnabled) as? Bool ?? false
             : false
         notificationPreviewsEnabled = defaults.object(forKey: Key.notificationPreviewsEnabled) as? Bool ?? false
+    }
+
+    func resetOnboardingPreferences() {
+        notificationPreviewsEnabled = false
+        aiEnabled = false
+        relationshipScoreEnabled = false
     }
 }

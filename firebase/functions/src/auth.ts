@@ -23,6 +23,13 @@ export function requireVerifiedCaller(
     );
   }
 
+  if (request.app.alreadyConsumed === true) {
+    throw new HttpsError(
+      "permission-denied",
+      "A fresh app attestation is required."
+    );
+  }
+
   return {
     uid: request.auth.uid,
     appId: request.app.appId

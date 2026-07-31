@@ -10,6 +10,7 @@ actor FirebaseProfileRepository: ProfileRepository {
         static let accountState = "accountState"
         static let schemaVersion = "schemaVersion"
         static let values = "values"
+        static let gender = "gender"
         static let relationshipType = "relationshipType"
         static let relationshipStartDate = "relationshipStartDate"
     }
@@ -40,6 +41,8 @@ actor FirebaseProfileRepository: ProfileRepository {
             ).getDocument()
             let values = preferenceSnapshot?.data()?[Field.values]
                 as? [String: Any]
+            let gender = (values?[Field.gender] as? String)
+                .flatMap(Gender.init(rawValue:))
             let relationshipType = (values?[Field.relationshipType] as? String)
                 .flatMap(RelationshipType.init(rawValue:))
                 ?? .unspecified
@@ -54,7 +57,8 @@ actor FirebaseProfileRepository: ProfileRepository {
                 countryCode: countryCode,
                 timeZoneIdentifier: timeZoneID,
                 relationshipType: relationshipType,
-                relationshipStartDate: relationshipStartDate
+                relationshipStartDate: relationshipStartDate,
+                gender: gender
             )
         } catch {
             AppLogger.persistence.error("Firebase profile load failed")
@@ -100,6 +104,8 @@ actor FirebaseProfileRepository: ProfileRepository {
             var relationshipValues: [String: Any] = [
                 Field.relationshipType: profile.relationshipType.rawValue,
             ]
+            relationshipValues[Field.gender] =
+                profile.gender?.rawValue ?? NSNull()
             relationshipValues[Field.relationshipStartDate] =
                 profile.relationshipStartDate.map(Timestamp.init(date:))
                 ?? NSNull()

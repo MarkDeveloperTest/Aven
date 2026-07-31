@@ -19,6 +19,7 @@ struct MessagesView: View {
             }
         }
         .navigationTitle(Text("tab.messages"))
+        .background(AvenBackground())
         .safeAreaInset(edge: .bottom) {
             if store.isActive {
                 composer
@@ -42,7 +43,7 @@ struct MessagesView: View {
             }
             .padding(AvenSpacing.medium)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(AvenBackground())
     }
 
     private var composer: some View {
@@ -66,7 +67,12 @@ struct MessagesView: View {
             .accessibilityIdentifier("messages.send")
         }
         .padding(AvenSpacing.small)
-        .background(.bar)
+        .background(Color.white.opacity(0.96))
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(PremiumArrivalStyle.divider)
+                .frame(height: 0.75)
+        }
     }
 }
 
@@ -87,9 +93,17 @@ private struct MessageBubble: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                     .background(
-                        isCurrentUser ? AnyShapeStyle(accent.gradient) : AnyShapeStyle(.thinMaterial),
+                        isCurrentUser
+                            ? AnyShapeStyle(accent)
+                            : AnyShapeStyle(Color.white.opacity(0.90)),
                         in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                     )
+                    .overlay {
+                        if isCurrentUser == false {
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(PremiumArrivalStyle.divider, lineWidth: 0.75)
+                        }
+                    }
 
                 Text(message.sentAt, format: .dateTime.hour().minute())
                     .font(.caption2)

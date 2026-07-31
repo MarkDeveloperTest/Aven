@@ -557,7 +557,15 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow create: if isSelf(userId) && validUserCreate(userId);
-      allow read: if isSelf(userId) && resource.data.accountState != "deleted";
+      // Profile bootstrap first checks whether the signed-in user's document
+      // exists. Permit that single-document miss without exposing another
+      // user's profile or allowing collection queries.
+      allow get: if isSelf(userId)
+        && (
+          !exists(/databases/$(database)/documents/users/$(userId))
+          || resource.data.accountState != "deleted"
+        );
+      allow list: if false;
       allow update: if isSelf(userId)
         && resource.data.accountState == "active"
         && validUserUpdate();

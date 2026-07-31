@@ -6,6 +6,8 @@ struct AppEnvironment {
     let brand: BrandConfiguration
     let authenticationRepository: any AuthenticationRepository
     let profileRepository: any ProfileRepository
+    let relationshipRepository: any RelationshipRepository
+    let pairingIntentVault: any PairingIntentVault
 
     static func live() -> AppEnvironment {
         let buildEnvironment = AppBuildEnvironment.current
@@ -20,12 +22,18 @@ struct AppEnvironment {
             firebaseStatus == .configured
                 ? FirebaseProfileRepository()
                 : UnavailableProfileRepository()
+        let relationshipRepository: any RelationshipRepository =
+            firebaseStatus == .configured
+                ? FirebaseRelationshipRepository()
+                : UnavailableRelationshipRepository()
 
         return AppEnvironment(
             buildEnvironment: buildEnvironment,
             brand: .current,
             authenticationRepository: authenticationRepository,
-            profileRepository: profileRepository
+            profileRepository: profileRepository,
+            relationshipRepository: relationshipRepository,
+            pairingIntentVault: KeychainPairingIntentVault()
         )
     }
 }

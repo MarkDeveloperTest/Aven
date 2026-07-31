@@ -21,7 +21,7 @@ struct MainTabView: View {
                 UsView()
             }
         }
-        .tint(Color(red: 0.61, green: 0.46, blue: 0.26))
+        .tint(PremiumArrivalStyle.pinkInk)
     }
 
     private func tab<Content: View>(

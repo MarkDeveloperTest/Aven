@@ -1,5 +1,19 @@
 import Foundation
 
+nonisolated enum Gender: String, CaseIterable, Identifiable, Codable, Sendable {
+    case male
+    case female
+
+    var id: String { rawValue }
+
+    var localizedResource: LocalizedStringResource {
+        switch self {
+        case .male: "gender.male"
+        case .female: "gender.female"
+        }
+    }
+}
+
 nonisolated enum RelationshipType: String, CaseIterable, Identifiable, Codable, Sendable {
     case dating
     case longDistance
@@ -28,4 +42,5 @@ nonisolated struct UserProfile: Equatable, Codable, Sendable {
     var timeZoneIdentifier: String
     var relationshipType: RelationshipType
     var relationshipStartDate: Date?
+    var gender: Gender? = nil
 }

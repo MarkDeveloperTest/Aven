@@ -468,6 +468,30 @@
         }
       }
     },
+    "error.validation.gender" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose male or female to continue."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Щоб продовжити, виберіть чоловічу або жіночу стать."
+          }
+        }
+      }
+    },
+    "error.validation.relationship_start_date" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose your relationship start date." } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Оберіть дату початку стосунків." } }
+      }
+    },
     "error.validation.invite_code" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -481,6 +505,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Введіть дійсний код запрошення."
+          }
+        }
+      }
+    },
+    "gender.female" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Female"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Жіноча"
+          }
+        }
+      }
+    },
+    "gender.male" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Male"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Чоловіча"
           }
         }
       }
@@ -617,6 +675,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Відстань і місцевий час відображаються лише тоді, коли обидві люди погодилися ними ділитися."
+          }
+        }
+      }
+    },
+    "home.partner.fallback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ваш партнер або партнерка"
           }
         }
       }
@@ -1118,6 +1193,40 @@
         }
       }
     },
+    "onboarding.gender.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This stays private and helps personalize Aven."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Це залишається приватним і допомагає персоналізувати Aven."
+          }
+        }
+      }
+    },
+    "onboarding.gender.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What is your gender?"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Яка ваша стать?"
+          }
+        }
+      }
+    },
     "onboarding.finish.action" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1303,6 +1412,27 @@
             "value" : "Що показувати в сповіщеннях?"
           }
         }
+      }
+    },
+    "onboarding.location.enable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Allow always-on precise location" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Дозволити постійну точну геолокацію" } }
+      }
+    },
+    "onboarding.location.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Location is never shared automatically. You can change this later." } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Геолокація ніколи не передається автоматично. Це можна змінити пізніше." } }
+      }
+    },
+    "onboarding.location.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share places precisely?" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Ділитися місцями точно?" } }
       }
     },
     "onboarding.notifications.enable" : {
@@ -1617,13 +1747,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This is optional. You can add or change it later."
+            "value" : "Choose the date your relationship began. You can update it later."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Це необов’язково. Дату можна додати або змінити пізніше."
+            "value" : "Оберіть дату початку стосунків. Її можна змінити пізніше."
           }
         }
       }
@@ -1789,6 +1919,244 @@
       "comment" : "Intent to open the Aven app.",
       "isCommentAutoGenerated" : true
     },
+    "pairing.connected.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your private space is ready for both of you." } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Ваш приватний простір готовий для вас обох." } }
+      }
+    },
+    "pairing.connected.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "You're connected" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Ви з’єднані" } }
+      }
+    },
+    "pairing.connecting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connecting you securely…" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Безпечно з’єднуємо вас…" } }
+      }
+    },
+    "pairing.copy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copy invite code" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Копіювати код" } }
+      }
+    },
+    "pairing.copy.confirmation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copied" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Скопійовано" } }
+      }
+    },
+    "pairing.deferred.cancel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel pairing request" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Скасувати підключення" } }
+      }
+    },
+    "pairing.deferred.create.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Finish signing in and Aven will securely create your private invitation." } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Завершіть вхід, і Aven безпечно створить ваше приватне запрошення." } }
+      }
+    },
+    "pairing.deferred.create.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your QR is next" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Ваш QR-код буде далі" } }
+      }
+    },
+    "pairing.deferred.redeem.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Finish signing in and Aven will verify the invitation and connect you." } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Завершіть вхід, і Aven перевірить запрошення та з’єднає вас." } }
+      }
+    },
+    "pairing.deferred.redeem.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Partner QR saved" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "QR-код партнера збережено" } }
+      }
+    },
+    "pairing.qr.expires.label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Expires" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Діє ще" } }
+      }
+    },
+    "pairing.qr.instructions" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Let your partner scan this code in Aven." } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Нехай партнер відсканує цей код в Aven." } }
+      }
+    },
+    "pairing.retry" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Try again" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Спробувати ще раз" } }
+      }
+    },
+    "pairing.scan.action" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Scan partner's QR" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Сканувати QR-код партнера" } }
+      }
+    },
+    "pairing.scan.connecting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invitation captured. Connecting…" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Запрошення отримано. З’єднуємо…" } }
+      }
+    },
+    "pairing.scan.instructions" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Place the private QR inside the frame. Aven accepts it only after secure server verification." } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Помістіть приватний QR-код у рамку. Aven прийме його лише після безпечної перевірки сервером." } }
+      }
+    },
+    "pairing.scan.manual.action" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter invite code instead" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Ввести код запрошення" } }
+      }
+    },
+    "pairing.scan.manual.connect" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connect" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "З’єднати" } }
+      }
+    },
+    "pairing.scan.manual.invalid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "That invitation code isn't valid. Ask your partner for a new one." } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Цей код запрошення недійсний. Попросіть партнера створити новий." } }
+      }
+    },
+    "pairing.scan.manual.placeholder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Private invite code" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Приватний код запрошення" } }
+      }
+    },
+    "pairing.scan.manual.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter the private invite code" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Введіть приватний код запрошення" } }
+      }
+    },
+    "pairing.scan.permission.checking" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preparing the camera…" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Готуємо камеру…" } }
+      }
+    },
+    "pairing.scan.permission.denied.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Allow camera access in Settings, or enter the private invite code instead." } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Дозвольте доступ до камери в Параметрах або введіть приватний код запрошення." } }
+      }
+    },
+    "pairing.scan.permission.denied.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Camera access is off" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Доступ до камери вимкнено" } }
+      }
+    },
+    "pairing.scan.permission.restricted.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Camera use is restricted on this iPhone. Enter the private invite code instead." } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Використання камери обмежено на цьому iPhone. Введіть приватний код запрошення." } }
+      }
+    },
+    "pairing.scan.permission.restricted.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Camera is restricted" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Камеру обмежено" } }
+      }
+    },
+    "pairing.scan.permission.settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open Settings" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Відкрити Параметри" } }
+      }
+    },
+    "pairing.scan.qr.accessibility" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Private pairing QR code" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Приватний QR-код підключення" } }
+      }
+    },
+    "pairing.scan.qr.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your partner can scan this code in Aven." } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Ваш партнер може відсканувати цей код в Aven." } }
+      }
+    },
+    "pairing.scan.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Scan your partner's QR" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Скануйте QR-код партнера" } }
+      }
+    },
+    "pairing.scan.torch.off" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Turn flashlight off" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Вимкнути ліхтарик" } }
+      }
+    },
+    "pairing.scan.torch.on" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Turn flashlight on" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Увімкнути ліхтарик" } }
+      }
+    },
+    "pairing.scan.unavailable.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This device can't start the scanner. Enter the private invite code instead." } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Цей пристрій не може запустити сканер. Введіть приватний код запрошення." } }
+      }
+    },
+    "pairing.scan.unavailable.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Camera unavailable" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Камера недоступна" } }
+      }
+    },
     "pairing.code.accessibility" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1829,13 +2197,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Create a private invitation"
+            "value" : "Create my QR"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Створити приватне запрошення"
+            "value" : "Створити мій QR-код"
           }
         }
       }
@@ -1863,13 +2231,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aven connects two people who already know each other. Invitations are private, revocable, and one-time in production."
+            "value" : "Create a private QR for your partner, or scan theirs. Every invitation works once and can be revoked."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aven з’єднує двох людей, які вже знають одне одного. У продакшені запрошення приватні, відкличні та одноразові."
+            "value" : "Створіть приватний QR-код для партнера або відскануйте його код. Кожне запрошення діє один раз і його можна відкликати."
           }
         }
       }
@@ -2426,6 +2794,91 @@
         }
       }
     },
+    "settings.debug.activate_demo_partner" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activate demo partner"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Активувати демо-партнера"
+          }
+        }
+      }
+    },
+    "settings.debug.reset_pairing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset partner pairing"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скинути з’єднання з партнером"
+          }
+        }
+      }
+    },
+    "settings.debug.restart_onboarding" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restart onboarding"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перезапустити онбординг"
+          }
+        }
+      }
+    },
+    "settings.debug.section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Debug"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Налагодження"
+          }
+        }
+      }
+    },
+    "settings.debug.user_id" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "User ID"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ID користувача"
+          }
+        }
+      }
+    },
     "settings.delete_account" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2732,6 +3185,13 @@
         }
       }
     },
+    "settings.privacy.notifications" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Notifications" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Сповіщення" } }
+      }
+    },
     "settings.privacy.open_settings" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2747,6 +3207,20 @@
             "value" : "Відкрити системні налаштування"
           }
         }
+      }
+    },
+    "settings.privacy.request_location" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Request always-on precise location" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Запитати постійну точну геолокацію" } }
+      }
+    },
+    "settings.privacy.request_notifications" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Request notifications" } },
+        "uk" : { "stringUnit" : { "state" : "translated", "value" : "Запитати дозвіл на сповіщення" } }
       }
     },
     "settings.privacy.permissions_footer" : {

@@ -39,5 +39,20 @@ describe("callable caller verification", () => {
       uid: "alice",
       appId: "verified-app"
     });
+
+    expect(
+      () => requireVerifiedCaller(
+        requestWith(
+          {uid: "alice", token: {}},
+          {
+            appId: "verified-app",
+            token: {},
+            alreadyConsumed: true
+          }
+        )
+      )
+    ).toThrow(
+      expect.objectContaining({code: "permission-denied"})
+    );
   });
 });

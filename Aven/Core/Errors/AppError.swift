@@ -20,6 +20,10 @@ nonisolated enum AppError: Error, Equatable, Sendable {
             "error.external_configuration"
         case .validation(.displayName):
             "error.validation.display_name"
+        case .validation(.gender):
+            "error.validation.gender"
+        case .validation(.relationshipStartDate):
+            "error.validation.relationship_start_date"
         case .validation(.inviteCode):
             "error.validation.invite_code"
         case .relationship(.alreadyActive):
@@ -45,6 +49,8 @@ nonisolated enum AuthenticationError: Error, Equatable, Sendable {
 
 nonisolated enum ValidationError: Error, Equatable, Sendable {
     case displayName
+    case gender
+    case relationshipStartDate
     case inviteCode
 }
 

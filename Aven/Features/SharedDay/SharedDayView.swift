@@ -23,6 +23,7 @@ struct SharedDayView: View {
             }
         }
         .navigationTitle(Text("tab.shared_day"))
+        .background(AvenBackground())
         .toolbar {
             if store.isActive {
                 ToolbarItem(placement: .primaryAction) {
@@ -81,7 +82,7 @@ struct SharedDayView: View {
             }
             .padding(AvenSpacing.medium)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(AvenBackground())
     }
 }
 

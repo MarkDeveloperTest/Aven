@@ -87,6 +87,7 @@ All other user subcollections are denied by the nested fallback.
 The server-created relationship record includes:
 
 - exactly two `memberIds`
+- a server-copied `memberDisplayNames` map for the two connected users
 - `status`
 - `relationshipType`
 - optional `relationshipStartDate`
