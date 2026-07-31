@@ -6,6 +6,7 @@ import UIKit
 struct PairingQRCodeView: View {
     @Environment(\.displayScale) private var displayScale
 
+    private let quietZone: CGFloat = 18
     private let payload: String
     private let size: CGFloat
 
@@ -20,7 +21,7 @@ struct PairingQRCodeView: View {
     var body: some View {
         let renderedCode = Self.render(
             payload: payload,
-            maximumPointSize: size,
+            maximumPointSize: max(size - quietZone * 2, 1),
             displayScale: displayScale
         )
 

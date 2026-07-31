@@ -70,46 +70,26 @@ final class RelationshipStore {
 
     func restoreDeferredPairing() async {
         guard didRestoreDeferredPairing == false else { return }
-        didRestoreDeferredPairing = true
 
         do {
             guard let state = try await pairingIntentPersistence.load() else {
+                didRestoreDeferredPairing = true
                 return
             }
             guard state.isValid() else {
+                didRestoreDeferredPairing = true
                 persistPairingState()
                 return
             }
 
+            didRestoreDeferredPairing = true
             persistedPairingOwnerUserID = state.ownerUserID
-            switch state.kind {
-            case .createInvitation:
-                wantsInvitationCreation = true
-                pairingIdempotencyKey = state.idempotencyKey
-            case .redeemInvitation:
-                deferredInvitationCode = state.invitationCode
-                pairingIdempotencyKey = state.idempotencyKey
-            case .invitation:
-                guard
-                    let invitationID = state.invitationID,
-                    let invitationCode = state.invitationCode,
-                    let expiresAt = state.invitationExpiresAt
-                else {
-                    persistPairingState()
-                    return
-                }
-                let restoredInvitation = PairingInvitation(
-                    id: invitationID,
-                    code: invitationCode,
-                    expiresAt: expiresAt
-                )
-                invitation = restoredInvitation
-                relationship.inviteCode = invitationCode
-                relationship.status = .invitationPending
-                if let revocationIdempotencyKey = state.revocationIdempotencyKey {
-                    revocationInvitationID = invitationID
-                    self.revocationIdempotencyKey = revocationIdempotencyKey
-                }
+            if state.ownerUserID != nil {
+                // Keep account-owned bearer codes private until prepare(for:)
+                // proves that Firebase restored the same UID.
+                quarantinedPairingState = state
+            } else {
+                applyRestoredPairingState(state)
             }
         } catch {
             AppLogger.persistence.error("Secure pairing state restore failed")
@@ -121,18 +101,37 @@ final class RelationshipStore {
         profile: UserProfile?,
         locale: Locale? = nil
     ) {
+        let matchingQuarantinedState: StoredPairingState?
+        if let quarantinedPairingState {
+            matchingQuarantinedState = quarantinedPairingState.ownerUserID == user.id
+                ? quarantinedPairingState
+                : nil
+            self.quarantinedPairingState = nil
+        } else {
+            matchingQuarantinedState = nil
+        }
+
         if ownerUserID != user.id {
             let belongsToAnotherUser = persistedPairingOwnerUserID.map {
                 $0 != user.id
             } ?? false
             let shouldPreserveDeferredPairing = ownerUserID == nil
                 && belongsToAnotherUser == false
+            let shouldPersistOwnerClaim = shouldPreserveDeferredPairing
+                && persistedPairingOwnerUserID == nil
+                && storedPairingState != nil
             resetScopedState(clearDeferredPairing: shouldPreserveDeferredPairing == false)
             ownerUserID = user.id
             relationship.memberIDs = [user.id]
-            if shouldPreserveDeferredPairing {
+            if let matchingQuarantinedState {
                 persistedPairingOwnerUserID = user.id
-                persistPairingState()
+                applyRestoredPairingState(matchingQuarantinedState)
+            } else if shouldPreserveDeferredPairing {
+                persistedPairingOwnerUserID = user.id
+                requiresPairingOwnerClaimPersistence = shouldPersistOwnerClaim
+                if shouldPersistOwnerClaim == false {
+                    persistPairingState()
+                }
             }
         }
         preparedProfile = profile
@@ -225,6 +224,9 @@ final class RelationshipStore {
 
     func clearDeferredPairing() {
         guard isPairing == false else { return }
+        pairingOwnerClaimTask?.cancel()
+        pairingOwnerClaimTask = nil
+        requiresPairingOwnerClaimPersistence = false
         deferredInvitationCode = nil
         wantsInvitationCreation = false
         pairingIdempotencyKey = nil
@@ -320,11 +322,18 @@ final class RelationshipStore {
     private func processDeferredPairingIfPossible() {
         guard
             isPairing == false,
-            ownerUserID != nil,
-            let preparedProfile
+            pairingOwnerClaimTask == nil,
+            ownerUserID != nil
         else {
             return
         }
+
+        if requiresPairingOwnerClaimPersistence {
+            persistPairingOwnerClaim()
+            return
+        }
+
+        guard let preparedProfile else { return }
 
         if let deferredInvitationCode {
             let idempotencyKey = pairingIdempotencyKey
@@ -380,6 +389,7 @@ final class RelationshipStore {
             } catch let appError as AppError {
                 guard self?.ownerUserID == expectedOwnerUserID else { return }
                 guard self?.relationship.status != .active else { return }
+                self?.discardDeferredInvitationIfDefinitive(appError)
                 self?.pairingError = appError
             } catch {
                 guard self?.ownerUserID == expectedOwnerUserID else { return }
@@ -450,6 +460,7 @@ final class RelationshipStore {
                 self.pairingError = nil
                 self.persistPairingState()
             case .failed:
+                self.observedUserID = nil
                 AppLogger.persistence.error("Firebase relationship observation failed")
             }
         }
@@ -466,6 +477,25 @@ final class RelationshipStore {
         persistPairingState()
     }
 
+    private func discardDeferredInvitationIfDefinitive(_ error: AppError) {
+        guard deferredInvitationCode != nil else { return }
+        switch error {
+        case .validation(.inviteCode),
+             .relationship(.alreadyActive),
+             .relationship(.inviteExpired),
+             .relationship(.notAuthorized):
+            deferredInvitationCode = nil
+            pairingIdempotencyKey = nil
+            persistPairingState()
+        case .authentication,
+             .validation,
+             .offline,
+             .externalConfigurationRequired,
+             .unknown:
+            return
+        }
+    }
+
     func endRelationship() {
         relationship.status = .ended
         relationship.inviteCode = nil
@@ -480,6 +510,9 @@ final class RelationshipStore {
     private func resetScopedState(clearDeferredPairing: Bool) {
         pairingTask?.cancel()
         pairingTask = nil
+        pairingOwnerClaimTask?.cancel()
+        pairingOwnerClaimTask = nil
+        requiresPairingOwnerClaimPersistence = false
         repository.stopObservingRelationship()
         observedUserID = nil
         ownerUserID = nil
@@ -498,6 +531,7 @@ final class RelationshipStore {
             revocationInvitationID = nil
             revocationIdempotencyKey = nil
             persistedPairingOwnerUserID = nil
+            quarantinedPairingState = nil
             persistPairingState()
         } else if let invitation {
             relationship.inviteCode = invitation.code
@@ -517,6 +551,72 @@ final class RelationshipStore {
                 )
             } catch {
                 AppLogger.persistence.error("Secure pairing state save failed")
+            }
+        }
+    }
+
+    private func persistPairingOwnerClaim() {
+        guard
+            pairingOwnerClaimTask == nil,
+            requiresPairingOwnerClaimPersistence,
+            let expectedOwnerUserID = ownerUserID,
+            let state = storedPairingState
+        else {
+            return
+        }
+
+        pairingPersistenceRevision += 1
+        let revision = pairingPersistenceRevision
+        pairingOwnerClaimTask = Task { [weak self, pairingIntentPersistence] in
+            do {
+                try await pairingIntentPersistence.apply(
+                    state,
+                    revision: revision
+                )
+                try Task.checkCancellation()
+                guard self?.ownerUserID == expectedOwnerUserID else { return }
+                self?.requiresPairingOwnerClaimPersistence = false
+                self?.pairingOwnerClaimTask = nil
+                self?.processDeferredPairingIfPossible()
+            } catch is CancellationError {
+                return
+            } catch {
+                guard self?.ownerUserID == expectedOwnerUserID else { return }
+                self?.pairingOwnerClaimTask = nil
+                self?.pairingError = .unknown
+                AppLogger.persistence.error("Secure pairing owner claim failed")
+            }
+        }
+    }
+
+    private func applyRestoredPairingState(_ state: StoredPairingState) {
+        switch state.kind {
+        case .createInvitation:
+            wantsInvitationCreation = true
+            pairingIdempotencyKey = state.idempotencyKey
+        case .redeemInvitation:
+            deferredInvitationCode = state.invitationCode
+            pairingIdempotencyKey = state.idempotencyKey
+        case .invitation:
+            guard
+                let invitationID = state.invitationID,
+                let invitationCode = state.invitationCode,
+                let expiresAt = state.invitationExpiresAt
+            else {
+                persistPairingState()
+                return
+            }
+            let restoredInvitation = PairingInvitation(
+                id: invitationID,
+                code: invitationCode,
+                expiresAt: expiresAt
+            )
+            invitation = restoredInvitation
+            relationship.inviteCode = invitationCode
+            relationship.status = .invitationPending
+            if let revocationIdempotencyKey = state.revocationIdempotencyKey {
+                revocationInvitationID = invitationID
+                self.revocationIdempotencyKey = revocationIdempotencyKey
             }
         }
     }

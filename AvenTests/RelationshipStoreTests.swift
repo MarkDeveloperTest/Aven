@@ -129,6 +129,23 @@ struct RelationshipStoreTests {
         #expect(Set(repository.redeemIdempotencyKeys).count == 1)
     }
 
+    @Test("A permanently expired invitation is not retried after relaunch")
+    func definitiveRedeemFailureClearsDeferredCode() async {
+        let repository = FakeRelationshipRepository()
+        repository.redeemError = .relationship(.inviteExpired)
+        let store = RelationshipStore(repository: repository)
+        let user = makeUser(id: "user-a")
+        store.prepare(for: user, profile: makeProfile(userID: user.id))
+
+        store.redeemInvitation(code: validInvitationCode)
+
+        #expect(await waitUntil {
+            store.pairingError == .relationship(.inviteExpired)
+                && store.isPairing == false
+        })
+        #expect(store.deferredPairingState == .none)
+    }
+
     @Test("A successful server revoke clears the pending invitation")
     func successfulRevokeClearsInvitation() async {
         let repository = FakeRelationshipRepository()
@@ -357,6 +374,110 @@ struct RelationshipStoreTests {
         #expect(restoredStore.relationship.status == .unpaired)
     }
 
+    @Test("A restored QR stays hidden until its Firebase owner matches")
+    func restoredInvitationWaitsForMatchingOwner() async {
+        let repository = FakeRelationshipRepository()
+        let vault = FakePairingIntentVault(
+            state: .invitation(
+                ownerUserID: "user-a",
+                invitation: repository.invitationResult,
+                revocationIdempotencyKey: nil
+            )
+        )
+        let store = RelationshipStore(
+            repository: repository,
+            pairingIntentVault: vault
+        )
+
+        await store.restoreDeferredPairing()
+
+        #expect(store.invitation == nil)
+        #expect(store.relationship.status == .unpaired)
+
+        let user = makeUser(id: "user-a")
+        store.prepare(for: user, profile: makeProfile(userID: user.id))
+
+        #expect(store.invitation == repository.invitationResult)
+        #expect(store.relationship.status == .invitationPending)
+    }
+
+    @Test("A restored QR is deleted for a different Firebase owner")
+    func restoredInvitationRejectsDifferentOwner() async {
+        let repository = FakeRelationshipRepository()
+        let vault = FakePairingIntentVault(
+            state: .invitation(
+                ownerUserID: "user-a",
+                invitation: repository.invitationResult,
+                revocationIdempotencyKey: nil
+            )
+        )
+        let store = RelationshipStore(
+            repository: repository,
+            pairingIntentVault: vault
+        )
+        await store.restoreDeferredPairing()
+
+        let otherUser = makeUser(id: "user-b")
+        store.prepare(
+            for: otherUser,
+            profile: makeProfile(userID: otherUser.id)
+        )
+
+        #expect(store.invitation == nil)
+        #expect(store.relationship.status == .unpaired)
+        #expect(await waitForVaultDeletion(vault))
+    }
+
+    @Test("A transient Keychain load failure can be retried")
+    func transientVaultLoadCanRetry() async {
+        let vault = FakePairingIntentVault(
+            state: .redeemInvitation(
+                ownerUserID: nil,
+                idempotencyKey: UUID().uuidString.lowercased(),
+                invitationCode: validInvitationCode
+            ),
+            loadFailuresRemaining: 1
+        )
+        let store = RelationshipStore(
+            repository: FakeRelationshipRepository(),
+            pairingIntentVault: vault
+        )
+
+        await store.restoreDeferredPairing()
+        #expect(store.deferredPairingState == .none)
+
+        await store.restoreDeferredPairing()
+        #expect(store.deferredPairingState == .redeemInvitation)
+    }
+
+    @Test("A pre-sign-in scan is owner-bound before Firebase redemption")
+    func ownerClaimPersistsBeforeRedeem() async throws {
+        let vault = FakePairingIntentVault()
+        let repository = FakeRelationshipRepository()
+        let store = RelationshipStore(
+            repository: repository,
+            pairingIntentVault: vault
+        )
+        store.redeemInvitation(code: validInvitationCode)
+        let unownedState = try #require(
+            await waitForVaultState(vault, kind: .redeemInvitation)
+        )
+        #expect(unownedState.ownerUserID == nil)
+        await vault.suspendNextSave()
+
+        let user = makeUser(id: "user-a")
+        store.prepare(for: user, profile: makeProfile(userID: user.id))
+
+        #expect(await waitForSuspendedVaultSave(vault))
+        #expect(repository.redeemCalls.isEmpty)
+
+        await vault.resumeSave()
+        #expect(await waitUntil {
+            repository.redeemCalls.count == 1 && store.isPairing == false
+        })
+        #expect(await vault.hasSavedState(ownerUserID: user.id))
+    }
+
     @Test("A late callable error cannot undo an observed couple")
     func observedRelationshipWinsLateRedeemError() async {
         let repository = FakeRelationshipRepository()
@@ -555,6 +676,32 @@ struct RelationshipStoreTests {
         }
         return await vault.snapshot()
     }
+
+    private func waitForVaultDeletion(
+        _ vault: FakePairingIntentVault,
+        attempts: Int = 200
+    ) async -> Bool {
+        for _ in 0..<attempts {
+            if await vault.snapshot() == nil {
+                return true
+            }
+            await Task.yield()
+        }
+        return await vault.snapshot() == nil
+    }
+
+    private func waitForSuspendedVaultSave(
+        _ vault: FakePairingIntentVault,
+        attempts: Int = 200
+    ) async -> Bool {
+        for _ in 0..<attempts {
+            if await vault.hasSuspendedSave() {
+                return true
+            }
+            await Task.yield()
+        }
+        return await vault.hasSuspendedSave()
+    }
 }
 
 @MainActor
@@ -588,6 +735,7 @@ private final class FakeRelationshipRepository: RelationshipRepository {
     var createFailuresRemaining = 0
     var revokeFailuresRemaining = 0
     var redeemFailuresRemaining = 0
+    var redeemError: AppError?
     private var createContinuation:
         CheckedContinuation<PairingInvitation, any Error>?
     var shouldSuspendRedeem = false
@@ -641,6 +789,9 @@ private final class FakeRelationshipRepository: RelationshipRepository {
         if redeemFailuresRemaining > 0 {
             redeemFailuresRemaining -= 1
             throw AppError.offline
+        }
+        if let redeemError {
+            throw redeemError
         }
         if shouldSuspendRedeem {
             return try await withCheckedThrowingContinuation { continuation in
@@ -705,13 +856,36 @@ private final class FakeRelationshipRepository: RelationshipRepository {
 
 private actor FakePairingIntentVault: PairingIntentVault {
     private var state: StoredPairingState?
+    private var savedStates: [StoredPairingState] = []
+    private var loadFailuresRemaining: Int
+    private var shouldSuspendNextSave = false
+    private var saveContinuation: CheckedContinuation<Void, Never>?
+
+    init(
+        state: StoredPairingState? = nil,
+        loadFailuresRemaining: Int = 0
+    ) {
+        self.state = state
+        self.loadFailuresRemaining = loadFailuresRemaining
+    }
 
     func load() async throws -> StoredPairingState? {
-        state
+        if loadFailuresRemaining > 0 {
+            loadFailuresRemaining -= 1
+            throw AppError.offline
+        }
+        return state
     }
 
     func save(_ state: StoredPairingState) async throws {
+        if shouldSuspendNextSave {
+            shouldSuspendNextSave = false
+            await withCheckedContinuation { continuation in
+                saveContinuation = continuation
+            }
+        }
         self.state = state
+        savedStates.append(state)
     }
 
     func delete() async throws {
@@ -720,5 +894,23 @@ private actor FakePairingIntentVault: PairingIntentVault {
 
     func snapshot() -> StoredPairingState? {
         state
+    }
+
+    func suspendNextSave() {
+        shouldSuspendNextSave = true
+    }
+
+    func hasSuspendedSave() -> Bool {
+        saveContinuation != nil
+    }
+
+    func hasSavedState(ownerUserID: String) -> Bool {
+        savedStates.contains { $0.ownerUserID == ownerUserID }
+    }
+
+    func resumeSave() {
+        let continuation = saveContinuation
+        saveContinuation = nil
+        continuation?.resume()
     }
 }

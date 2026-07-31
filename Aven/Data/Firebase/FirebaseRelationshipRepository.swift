@@ -154,14 +154,25 @@ final class FirebaseRelationshipRepository: RelationshipRepository {
                         return
                     }
 
-                    let relationshipID = snapshot.data()?["activeRelationshipId"]
-                        as? String
-                    guard
-                        let relationshipID,
-                        Self.isValidRelationshipID(relationshipID)
-                    else {
+                    guard snapshot.exists, let data = snapshot.data() else {
+                        onChange(.failed(.unknown))
+                        continue
+                    }
+                    let rawRelationshipID = data["activeRelationshipId"]
+                    if rawRelationshipID == nil || rawRelationshipID is NSNull {
+                        guard snapshot.metadata.isFromCache == false else {
+                            onChange(.failed(.offline))
+                            continue
+                        }
                         self.stopRelationshipObservation()
                         onChange(.unpaired)
+                        continue
+                    }
+                    guard
+                        let relationshipID = rawRelationshipID as? String,
+                        Self.isValidRelationshipID(relationshipID)
+                    else {
+                        onChange(.failed(.unknown))
                         continue
                     }
                     self.observeRelationship(
@@ -171,8 +182,16 @@ final class FirebaseRelationshipRepository: RelationshipRepository {
                     )
                 }
             } catch {
-                guard Task.isCancelled == false else { return }
-                self?.stopRelationshipObservation()
+                guard
+                    let self,
+                    Task.isCancelled == false,
+                    self.observedUserID == userID
+                else {
+                    return
+                }
+                self.userObservationTask = nil
+                self.stopRelationshipObservation()
+                self.observedUserID = nil
                 onChange(.failed(Self.mapObservationError(error)))
             }
         }
@@ -218,7 +237,16 @@ final class FirebaseRelationshipRepository: RelationshipRepository {
                     onChange(.relationship(summary))
                 }
             } catch {
-                guard Task.isCancelled == false else { return }
+                guard
+                    let self,
+                    Task.isCancelled == false,
+                    self.observedUserID == userID,
+                    self.observedRelationshipID == relationshipID
+                else {
+                    return
+                }
+                self.relationshipObservationTask = nil
+                self.observedRelationshipID = nil
                 onChange(.failed(Self.mapObservationError(error)))
             }
         }

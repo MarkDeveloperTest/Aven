@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 struct CouplePairingView: View {
     enum Presentation {
@@ -277,7 +278,13 @@ struct CouplePairingView: View {
     }
 
     private func copy(_ payload: String) {
-        UIPasteboard.general.string = payload
+        UIPasteboard.general.setItems(
+            [[UTType.utf8PlainText.identifier: payload]],
+            options: [
+                .localOnly: true,
+                .expirationDate: Date.now.addingTimeInterval(5 * 60),
+            ]
+        )
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         showsCopiedConfirmation = true
         Task {

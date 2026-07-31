@@ -1,5 +1,6 @@
 import GoogleSignIn
 import SwiftUI
+import UIKit
 
 @main
 struct AvenApp: App {
@@ -64,6 +65,22 @@ struct AvenApp: App {
                         profile: session.profile,
                         locale: settings.language.locale
                     )
+                }
+                .onReceive(
+                    NotificationCenter.default.publisher(
+                        for: UIApplication.protectedDataDidBecomeAvailableNotification
+                    )
+                ) { _ in
+                    Task {
+                        await relationshipStore.restoreDeferredPairing()
+                        if let user = session.user {
+                            relationshipStore.prepare(
+                                for: user,
+                                profile: session.profile,
+                                locale: settings.language.locale
+                            )
+                        }
+                    }
                 }
                 .onOpenURL { url in
                     GIDSignIn.sharedInstance.handle(url)
