@@ -24,11 +24,10 @@ final class AppSession {
     var presentedError: AppError?
     var isWorking = false
 
-    /// Before sign-in, onboarding is intentionally stored only on this device.
-    /// Once it is completed the draft is removed, rather than being attached to
-    /// an account before the user has chosen to authenticate.
+    /// Before sign-in, onboarding is stored in a local draft. After sign-in the
+    /// draft is moved to that account so another account can never inherit it.
     var onboardingDraftUserID: String {
-        Self.localOnboardingDraftUserID
+        user?.id ?? Self.localOnboardingDraftUserID
     }
 
     init(environment: AppEnvironment) {
@@ -40,6 +39,8 @@ final class AppSession {
 
         #if DEBUG && targetEnvironment(simulator)
         if ProcessInfo.processInfo.arguments.contains("-ui-testing-guest-sign-in") {
+            OnboardingStore.clearProgress(for: Self.localOnboardingDraftUserID)
+            OnboardingStore.clearProgress(for: Self.simulatorUserID)
             user = nil
             profile = nil
             phase = .onboarding
@@ -48,8 +49,11 @@ final class AppSession {
         #endif
 
         if ProcessInfo.processInfo.arguments.contains("-ui-testing-onboarding") {
+            let fixtureUserID = "ui-test-onboarding-user"
+            OnboardingStore.clearProgress(for: Self.localOnboardingDraftUserID)
+            OnboardingStore.clearProgress(for: fixtureUserID)
             user = AuthenticatedUser(
-                id: "ui-test-onboarding-user",
+                id: fixtureUserID,
                 displayName: "Oksana",
                 email: nil
             )
@@ -90,7 +94,8 @@ final class AppSession {
 
         user = currentUser
         profile = await environment.profileRepository.loadProfile(for: currentUser.id)
-        phase = shouldContinueOnboarding(profile: profile)
+        migrateLegacyLocalDraftIfNeeded(to: currentUser.id)
+        phase = shouldContinueOnboarding(profile: profile, userID: currentUser.id)
             ? .onboarding
             : .authenticated
     }
@@ -111,6 +116,10 @@ final class AppSession {
         #if DEBUG && targetEnvironment(simulator)
         guard isWorking == false else { return }
         presentedError = nil
+        OnboardingStore.transferProgress(
+            from: Self.localOnboardingDraftUserID,
+            to: Self.simulatorUserID
+        )
         user = AuthenticatedUser(
             id: Self.simulatorUserID,
             displayName: "Simulator Guest",
@@ -130,7 +139,7 @@ final class AppSession {
         guard isWorking == false else { return }
 
         #if DEBUG && targetEnvironment(simulator)
-        if user?.id == Self.simulatorUserID {
+        if usesLocalUITestProfilePersistence {
             self.profile = profile
             phase = .authenticated
             return
@@ -151,18 +160,20 @@ final class AppSession {
         }
     }
 
-    func prepareProfileForPairing(_ profile: UserProfile) async {
+    func prepareProfileForPairing(_ profile: UserProfile) async throws {
         guard
-            isWorking == false,
             phase == .onboarding,
             user?.id == profile.userID,
             self.profile == nil
         else {
             return
         }
+        guard isWorking == false else {
+            throw AppError.unknown
+        }
 
         #if DEBUG && targetEnvironment(simulator)
-        if user?.id == Self.simulatorUserID {
+        if usesLocalUITestProfilePersistence {
             self.profile = profile
             return
         }
@@ -174,15 +185,16 @@ final class AppSession {
             try await environment.profileRepository.saveProfile(profile)
             self.profile = profile
         } catch let appError as AppError {
-            presentedError = appError
+            throw appError
         } catch {
             AppLogger.persistence.error("Pairing profile preparation failed")
-            presentedError = .unknown
+            throw AppError.unknown
         }
     }
 
     func signOut() async {
         guard isWorking == false else { return }
+        let signedOutUserID = user?.id
 
         #if DEBUG && targetEnvironment(simulator)
         if user?.id == Self.simulatorUserID {
@@ -196,6 +208,9 @@ final class AppSession {
         do {
             try await environment.authenticationRepository.signOut()
             OnboardingStore.clearProgress(for: Self.localOnboardingDraftUserID)
+            if let signedOutUserID {
+                OnboardingStore.clearProgress(for: signedOutUserID)
+            }
             user = nil
             profile = nil
             phase = .onboarding
@@ -207,6 +222,7 @@ final class AppSession {
 
     func deleteAccount() async {
         guard isWorking == false else { return }
+        let deletedUserID = user?.id
 
         #if DEBUG && targetEnvironment(simulator)
         if user?.id == Self.simulatorUserID {
@@ -223,6 +239,9 @@ final class AppSession {
             }
             try await environment.authenticationRepository.deleteCurrentAccount()
             OnboardingStore.clearProgress(for: Self.localOnboardingDraftUserID)
+            if let deletedUserID {
+                OnboardingStore.clearProgress(for: deletedUserID)
+            }
             self.user = nil
             profile = nil
             phase = .onboarding
@@ -267,9 +286,23 @@ final class AppSession {
         defer { isWorking = false }
         do {
             let authenticatedUser = try await operation()
+            let loadedProfile = await environment.profileRepository.loadProfile(
+                for: authenticatedUser.id
+            )
+            if loadedProfile == nil {
+                OnboardingStore.transferProgress(
+                    from: Self.localOnboardingDraftUserID,
+                    to: authenticatedUser.id
+                )
+            } else {
+                OnboardingStore.clearProgress(for: Self.localOnboardingDraftUserID)
+            }
             user = authenticatedUser
-            profile = await environment.profileRepository.loadProfile(for: authenticatedUser.id)
-            phase = shouldContinueOnboarding(profile: profile)
+            profile = loadedProfile
+            phase = shouldContinueOnboarding(
+                profile: loadedProfile,
+                userID: authenticatedUser.id
+            )
                 ? .onboarding
                 : .authenticated
         } catch let appError as AppError {
@@ -282,16 +315,39 @@ final class AppSession {
         }
     }
 
-    private func shouldContinueOnboarding(profile: UserProfile?) -> Bool {
-        profile == nil || OnboardingStore.hasSavedProgress(
-            for: Self.localOnboardingDraftUserID
+    private func shouldContinueOnboarding(
+        profile: UserProfile?,
+        userID: String
+    ) -> Bool {
+        profile == nil || OnboardingStore.hasSavedProgress(for: userID)
+    }
+
+    private func migrateLegacyLocalDraftIfNeeded(to userID: String) {
+        guard OnboardingStore.hasSavedProgress(for: userID) == false else {
+            OnboardingStore.clearProgress(for: Self.localOnboardingDraftUserID)
+            return
+        }
+        OnboardingStore.transferProgress(
+            from: Self.localOnboardingDraftUserID,
+            to: userID
         )
     }
 
     private func resetLocalSession() {
         OnboardingStore.clearProgress(for: Self.localOnboardingDraftUserID)
+        if let userID = user?.id {
+            OnboardingStore.clearProgress(for: userID)
+        }
         user = nil
         profile = nil
         phase = .onboarding
     }
+
+    #if DEBUG && targetEnvironment(simulator)
+    private var usesLocalUITestProfilePersistence: Bool {
+        guard let userID = user?.id else { return false }
+        return userID == Self.simulatorUserID
+            || userID == "ui-test-onboarding-user"
+    }
+    #endif
 }

@@ -31,8 +31,11 @@ struct AvenApp: App {
                 .tint(PremiumArrivalStyle.pinkInk)
                 .task {
                     AvenHaptics.shared.prepare()
-                    await relationshipStore.restoreDeferredPairing()
+                    let pairingRestoreTask = Task { @MainActor in
+                        await relationshipStore.restoreDeferredPairing()
+                    }
                     await session.start()
+                    await pairingRestoreTask.value
                     if let user = session.user {
                         relationshipStore.prepare(
                             for: user,

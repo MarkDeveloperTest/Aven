@@ -71,11 +71,15 @@ final class RelationshipStore {
     func restoreDeferredPairing() async {
         guard didRestoreDeferredPairing == false else { return }
         didRestoreDeferredPairing = true
+        let startingRevision = pairingPersistenceRevision
 
         do {
             guard let state = try await pairingIntentPersistence.load() else {
                 return
             }
+            // A universal link may arrive while Keychain is loading. Never let
+            // an older persisted value replace the credential received now.
+            guard pairingPersistenceRevision == startingRevision else { return }
             guard state.isValid() else {
                 persistPairingState()
                 return
@@ -146,7 +150,10 @@ final class RelationshipStore {
         }
         #endif
 
-        guard ProcessInfo.processInfo.arguments.contains("-ui-testing-authenticated") else {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard arguments.contains("-ui-testing-authenticated")
+            || arguments.contains("-ui-testing-onboarding")
+        else {
             startObservingRelationshipIfNeeded(for: user.id)
             processDeferredPairingIfPossible()
             return

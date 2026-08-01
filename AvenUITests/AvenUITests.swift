@@ -83,4 +83,76 @@ final class AvenUITests: XCTestCase {
             NSPredicate(format: "label MATCHES %@", ".*[0-9]+[ ]*(of|/)[ ]*[0-9]+.*")
         ).firstMatch.exists)
     }
+
+    func testCompleteOnboardingJourneyReachesTheApp() {
+        let app = XCUIApplication()
+        app.launchArguments += [
+            "-ui-testing-onboarding",
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_GB"
+        ]
+        app.launch()
+
+        let continueButton = app.buttons["onboarding.continue"]
+        XCTAssertTrue(continueButton.waitForExistence(timeout: 8))
+        continueButton.tap()
+
+        let nameField = app.textFields["onboarding.name"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 3))
+        nameField.tap()
+        nameField.typeText("Oksana")
+        continueButton.tap()
+
+        XCTAssertTrue(
+            app.datePickers["onboarding.birth-date"].waitForExistence(timeout: 3)
+        )
+        continueButton.tap()
+
+        let gender = app.buttons["onboarding.gender.female"]
+        XCTAssertTrue(gender.waitForExistence(timeout: 3))
+        gender.tap()
+        continueButton.tap()
+
+        XCTAssertTrue(
+            app.buttons["onboarding.country.gb"].waitForExistence(timeout: 3)
+        )
+        continueButton.tap()
+
+        XCTAssertTrue(
+            app.buttons["onboarding.relationship.dating"].waitForExistence(timeout: 3)
+        )
+        continueButton.tap()
+
+        XCTAssertTrue(
+            app.datePickers["onboarding.relationship-date"].waitForExistence(timeout: 3)
+        )
+        continueButton.tap()
+
+        XCTAssertTrue(
+            app.buttons["onboarding.notifications.skip"].waitForExistence(timeout: 3)
+        )
+        continueButton.tap()
+
+        XCTAssertTrue(
+            app.buttons["onboarding.location.skip"].waitForExistence(timeout: 3)
+        )
+        continueButton.tap()
+
+        let skipAI = app.buttons["onboarding.ai.skip"]
+        XCTAssertTrue(skipAI.waitForExistence(timeout: 3))
+        skipAI.tap()
+        continueButton.tap()
+
+        XCTAssertTrue(
+            app.otherElements["pairing.connected"].waitForExistence(timeout: 5)
+        )
+        continueButton.tap()
+
+        XCTAssertTrue(
+            app.staticTexts["Made for mutual care"].waitForExistence(timeout: 3)
+        )
+        continueButton.tap()
+
+        XCTAssertTrue(app.tabBars.buttons["tab.home"].waitForExistence(timeout: 5))
+    }
 }

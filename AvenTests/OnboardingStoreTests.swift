@@ -201,6 +201,60 @@ struct OnboardingStoreTests {
         #expect(restoredStore.step == .finish)
     }
 
+    @Test("Local draft moves to the authenticated account")
+    func transfersLocalDraftToAuthenticatedUser() {
+        let defaults = isolatedDefaults()
+        let localStore = OnboardingStore(defaults: defaults)
+        localStore.attach(to: AppSession.localOnboardingDraftUserID)
+        localStore.displayName = "Oksana"
+        localStore.gender = .female
+        localStore.step = .relationshipType
+
+        OnboardingStore.transferProgress(
+            from: AppSession.localOnboardingDraftUserID,
+            to: "user-a",
+            defaults: defaults
+        )
+
+        let accountStore = OnboardingStore(defaults: defaults)
+        accountStore.attach(to: "user-a")
+        #expect(accountStore.displayName == "Oksana")
+        #expect(accountStore.gender == .female)
+        #expect(accountStore.step == .relationshipType)
+        #expect(
+            OnboardingStore.hasSavedProgress(
+                for: AppSession.localOnboardingDraftUserID,
+                defaults: defaults
+            ) == false
+        )
+    }
+
+    @Test("An existing account draft wins over a stale local draft")
+    func preservesExistingAccountDraftDuringTransfer() {
+        let defaults = isolatedDefaults()
+        let localStore = OnboardingStore(defaults: defaults)
+        localStore.attach(to: AppSession.localOnboardingDraftUserID)
+        localStore.displayName = "Wrong account"
+
+        let accountStore = OnboardingStore(defaults: defaults)
+        accountStore.attach(to: "user-a")
+        accountStore.displayName = "Alex"
+        accountStore.gender = .male
+        accountStore.step = .pairing
+
+        OnboardingStore.transferProgress(
+            from: AppSession.localOnboardingDraftUserID,
+            to: "user-a",
+            defaults: defaults
+        )
+
+        let restoredStore = OnboardingStore(defaults: defaults)
+        restoredStore.attach(to: "user-a")
+        #expect(restoredStore.displayName == "Alex")
+        #expect(restoredStore.gender == .male)
+        #expect(restoredStore.step == .pairing)
+    }
+
     @Test("Debug reset clears only the selected user's onboarding draft")
     func clearsSelectedUserDraft() {
         let defaults = isolatedDefaults()

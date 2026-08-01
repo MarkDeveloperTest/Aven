@@ -450,6 +450,42 @@ struct RelationshipStoreTests {
         #expect(store.deferredPairingState == .redeemInvitation)
     }
 
+    @Test("A universal link received during restore wins over stale Keychain state")
+    func incomingLinkWinsRestoreRace() async {
+        let staleCredential = PairingCredential.linkToken(validInvitationCode)
+        let incomingCredential = PairingCredential.linkToken(
+            String(repeating: "b", count: 40)
+                + "."
+                + String(repeating: "C", count: 43)
+        )
+        let vault = FakePairingIntentVault(
+            state: .redeemInvitation(
+                ownerUserID: nil,
+                idempotencyKey: UUID().uuidString.lowercased(),
+                credential: staleCredential
+            )
+        )
+        await vault.suspendNextLoad()
+        let repository = FakeRelationshipRepository()
+        let store = RelationshipStore(
+            repository: repository,
+            pairingIntentVault: vault
+        )
+
+        let restoreTask = Task { await store.restoreDeferredPairing() }
+        #expect(await waitForSuspendedVaultLoad(vault))
+        store.redeemInvitation(credential: incomingCredential)
+        await vault.resumeLoad()
+        await restoreTask.value
+
+        let user = makeUser(id: "user-a")
+        store.prepare(for: user, profile: makeProfile(userID: user.id))
+        #expect(await waitUntil {
+            repository.redeemCalls.count == 1 && store.isPairing == false
+        })
+        #expect(repository.redeemCalls == [incomingCredential])
+    }
+
     @Test("A pre-sign-in scan is owner-bound before Firebase redemption")
     func ownerClaimPersistsBeforeRedeem() async throws {
         let vault = FakePairingIntentVault()
@@ -702,6 +738,19 @@ struct RelationshipStoreTests {
         }
         return await vault.hasSuspendedSave()
     }
+
+    private func waitForSuspendedVaultLoad(
+        _ vault: FakePairingIntentVault,
+        attempts: Int = 200
+    ) async -> Bool {
+        for _ in 0..<attempts {
+            if await vault.hasSuspendedLoad() {
+                return true
+            }
+            await Task.yield()
+        }
+        return await vault.hasSuspendedLoad()
+    }
 }
 
 @MainActor
@@ -864,6 +913,8 @@ private actor FakePairingIntentVault: PairingIntentVault {
     private var loadFailuresRemaining: Int
     private var shouldSuspendNextSave = false
     private var saveContinuation: CheckedContinuation<Void, Never>?
+    private var shouldSuspendNextLoad = false
+    private var loadContinuation: CheckedContinuation<Void, Never>?
 
     init(
         state: StoredPairingState? = nil,
@@ -878,7 +929,14 @@ private actor FakePairingIntentVault: PairingIntentVault {
             loadFailuresRemaining -= 1
             throw AppError.offline
         }
-        return state
+        let loadedState = state
+        if shouldSuspendNextLoad {
+            shouldSuspendNextLoad = false
+            await withCheckedContinuation { continuation in
+                loadContinuation = continuation
+            }
+        }
+        return loadedState
     }
 
     func save(_ state: StoredPairingState) async throws {
@@ -898,6 +956,20 @@ private actor FakePairingIntentVault: PairingIntentVault {
 
     func snapshot() -> StoredPairingState? {
         state
+    }
+
+    func suspendNextLoad() {
+        shouldSuspendNextLoad = true
+    }
+
+    func hasSuspendedLoad() -> Bool {
+        loadContinuation != nil
+    }
+
+    func resumeLoad() {
+        let continuation = loadContinuation
+        loadContinuation = nil
+        continuation?.resume()
     }
 
     func suspendNextSave() {

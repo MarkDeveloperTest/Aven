@@ -319,6 +319,27 @@ final class OnboardingStore {
         }
     }
 
+    static func transferProgress(
+        from sourceUserID: String,
+        to destinationUserID: String,
+        defaults: UserDefaults = .standard
+    ) {
+        guard sourceUserID != destinationUserID else { return }
+
+        if hasSavedProgress(for: destinationUserID, defaults: defaults) == false {
+            for key in Key.all {
+                let sourceKey = "aven.onboarding.\(sourceUserID).\(key)"
+                guard let value = defaults.object(forKey: sourceKey) else { continue }
+                defaults.set(
+                    value,
+                    forKey: "aven.onboarding.\(destinationUserID).\(key)"
+                )
+            }
+        }
+
+        clearProgress(for: sourceUserID, defaults: defaults)
+    }
+
     private func restoredStep() -> Step {
         let stored = defaults.object(forKey: requiredStorageKey(for: Key.step))
         if let identifier = stored as? String, let step = Step(rawValue: identifier) {

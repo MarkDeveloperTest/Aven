@@ -45,6 +45,17 @@ struct OnboardingFlowView: View {
         .onChange(of: store.step) { _, _ in
             isNameFocused = false
         }
+        .onChange(of: store.displayName) { _, displayName in
+            guard
+                store.validationError == .validation(.displayName),
+                displayName.trimmingCharacters(in: .whitespacesAndNewlines).count >= 2
+            else {
+                return
+            }
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
+                store.validationError = nil
+            }
+        }
     }
 
     @ViewBuilder
@@ -214,6 +225,9 @@ struct OnboardingFlowView: View {
                         AvenHaptics.shared.selection()
                         store.relationshipType = type
                     }
+                    .accessibilityIdentifier(
+                        "onboarding.relationship.\(type.rawValue)"
+                    )
 
                     if type.id != RelationshipType.onboardingCases.last?.id {
                         Divider().overlay(PremiumArrivalStyle.divider)
@@ -240,6 +254,7 @@ struct OnboardingFlowView: View {
             .labelsHidden()
             .frame(maxWidth: .infinity)
             .tint(PremiumArrivalStyle.pinkInk)
+            .accessibilityIdentifier("onboarding.relationship-date")
         }
     }
 
@@ -258,8 +273,8 @@ struct OnboardingFlowView: View {
                     guard store.wantsNotifications == false else { return }
                     AvenHaptics.shared.selection()
                     store.wantsNotifications = true
-                    Task { await NotificationAuthorizationClient.requestIfNeeded() }
                 }
+                .accessibilityIdentifier("onboarding.notifications.enable")
 
                 Divider().overlay(PremiumArrivalStyle.divider)
 
@@ -271,6 +286,7 @@ struct OnboardingFlowView: View {
                     AvenHaptics.shared.selection()
                     store.wantsNotifications = false
                 }
+                .accessibilityIdentifier("onboarding.notifications.skip")
             }
         }
     }
@@ -291,6 +307,7 @@ struct OnboardingFlowView: View {
                     AvenHaptics.shared.selection()
                     settings.notificationPreviewsEnabled = true
                 }
+                .accessibilityIdentifier("onboarding.previews.show")
 
                 Divider().overlay(PremiumArrivalStyle.divider)
 
@@ -302,6 +319,7 @@ struct OnboardingFlowView: View {
                     AvenHaptics.shared.selection()
                     settings.notificationPreviewsEnabled = false
                 }
+                .accessibilityIdentifier("onboarding.previews.private")
             }
         }
     }
@@ -322,6 +340,7 @@ struct OnboardingFlowView: View {
                     AvenHaptics.shared.selection()
                     store.wantsPreciseLocation = true
                 }
+                .accessibilityIdentifier("onboarding.location.enable")
 
                 Divider().overlay(PremiumArrivalStyle.divider)
 
@@ -333,6 +352,7 @@ struct OnboardingFlowView: View {
                     AvenHaptics.shared.selection()
                     store.wantsPreciseLocation = false
                 }
+                .accessibilityIdentifier("onboarding.location.skip")
             }
         }
     }
@@ -353,6 +373,7 @@ struct OnboardingFlowView: View {
                     AvenHaptics.shared.selection()
                     settings.aiEnabled = true
                 }
+                .accessibilityIdentifier("onboarding.ai.enable")
 
                 Divider().overlay(PremiumArrivalStyle.divider)
 
@@ -364,6 +385,7 @@ struct OnboardingFlowView: View {
                     AvenHaptics.shared.selection()
                     settings.aiEnabled = false
                 }
+                .accessibilityIdentifier("onboarding.ai.skip")
             }
         }
     }
@@ -373,15 +395,38 @@ struct OnboardingFlowView: View {
             if session.user == nil {
                 AuthenticationView(isEmbedded: true)
             } else if session.profile == nil {
-                HStack(spacing: 14) {
-                    ProgressView()
-                        .tint(PremiumArrivalStyle.pinkInk)
+                VStack(alignment: .leading, spacing: 28) {
+                    PremiumArrivalHeading(
+                        title: "pairing.connecting.title",
+                        message: "pairing.connecting.message"
+                    )
 
-                    Text("pairing.connecting")
-                        .font(.body.weight(.medium))
+                    if session.isWorking || store.validationError == nil {
+                        HStack(spacing: 14) {
+                            ProgressView()
+                                .tint(PremiumArrivalStyle.pinkInk)
+
+                            Text("pairing.connecting")
+                                .font(.body.weight(.medium))
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 72)
+                        .accessibilityElement(children: .combine)
+                    } else {
+                        VStack(alignment: .leading, spacing: 16) {
+                            inlineValidation
+
+                            Button("pairing.retry") {
+                                AvenHaptics.shared.light()
+                                Task { await preparePairingProfileIfNeeded() }
+                            }
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(PremiumArrivalStyle.ink)
+                            .frame(minHeight: 48)
+                            .buttonStyle(PremiumPressableButtonStyle())
+                            .accessibilityIdentifier("onboarding.pairing.retry")
+                        }
+                    }
                 }
-                .frame(maxWidth: .infinity, minHeight: 72)
-                .accessibilityElement(children: .combine)
             } else {
                 CouplePairingView(
                     presentation: .onboarding,
@@ -426,6 +471,7 @@ struct OnboardingFlowView: View {
             store.countryCode = code
             settings.language = AppLanguage.inferred(fromRegionCode: code)
         }
+        .accessibilityIdentifier("onboarding.country.\(code.lowercased())")
     }
 
     private func choiceRow(
@@ -483,7 +529,12 @@ struct OnboardingFlowView: View {
                 Image(systemName: "exclamationmark.circle.fill")
             }
             .foregroundStyle(Color(red: 0.66, green: 0.25, blue: 0.34))
-            .transition(.move(edge: .top).combined(with: .opacity))
+            .transition(
+                reduceMotion
+                    ? .opacity
+                    : .move(edge: .top).combined(with: .opacity)
+            )
+            .accessibilityElement(children: .combine)
         }
     }
 
@@ -536,8 +587,11 @@ struct OnboardingFlowView: View {
     private func goForward() {
         let previousStep = store.step
         transitionDirection = .forward
-        withAnimation(reduceMotion ? nil : .smooth(duration: 0.42)) {
+        withAnimation(reduceMotion ? nil : .smooth(duration: 0.32)) {
             store.goForward(pairingIsComplete: pairingIsComplete)
+        }
+        if previousStep == .notifications, store.wantsNotifications {
+            Task { await NotificationAuthorizationClient.requestIfNeeded() }
         }
         if previousStep == .preciseLocation, store.wantsPreciseLocation {
             Task { await LocationAuthorizationClient.requestAlwaysPreciseIfNeeded() }
@@ -560,11 +614,14 @@ struct OnboardingFlowView: View {
 
         do {
             let profile = try store.makeProfile(userID: user.id)
-            await session.prepareProfileForPairing(profile)
+            store.validationError = nil
+            try await session.prepareProfileForPairing(profile)
         } catch let error as AppError {
             store.validationError = error
+            AvenHaptics.shared.error()
         } catch {
             store.validationError = .unknown
+            AvenHaptics.shared.error()
         }
     }
 
@@ -572,7 +629,7 @@ struct OnboardingFlowView: View {
         guard store.canGoBack else { return }
         transitionDirection = .backward
         AvenHaptics.shared.soft()
-        withAnimation(reduceMotion ? nil : .smooth(duration: 0.38)) {
+        withAnimation(reduceMotion ? nil : .smooth(duration: 0.30)) {
             store.goBack()
         }
     }

@@ -43,6 +43,7 @@ struct PremiumArrivalWordmark: View {
 }
 
 struct PremiumPrimaryButton: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let title: LocalizedStringResource
     let isLoading: Bool
     let action: () -> Void
@@ -59,17 +60,29 @@ struct PremiumPrimaryButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.body.weight(.semibold))
-                .opacity(isLoading ? 0.58 : 1)
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: 56)
-                .foregroundStyle(.white)
-                .background(
-                    PremiumArrivalStyle.ink,
-                    in: .rect(cornerRadius: 10, style: .continuous)
-                )
-                .shadow(color: .black.opacity(0.10), radius: 10, y: 5)
+            ZStack {
+                Text(title)
+                    .font(.body.weight(.semibold))
+                    .opacity(isLoading ? 0 : 1)
+
+                if isLoading {
+                    ProgressView()
+                        .tint(.white)
+                        .transition(.opacity)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 56)
+            .foregroundStyle(.white)
+            .background(
+                PremiumArrivalStyle.ink,
+                in: .rect(cornerRadius: 10, style: .continuous)
+            )
+            .shadow(color: .black.opacity(0.10), radius: 10, y: 5)
+            .animation(
+                reduceMotion ? nil : .easeOut(duration: 0.18),
+                value: isLoading
+            )
         }
         .disabled(isLoading)
         .buttonStyle(PremiumPressableButtonStyle())
@@ -124,20 +137,29 @@ struct PremiumArrivalScaffold<Content: View>: View {
             PremiumArrivalBackground()
 
             GeometryReader { geometry in
-                VStack(alignment: .leading, spacing: 0) {
-                    PremiumArrivalWordmark()
-                        .padding(.top, 28)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        PremiumArrivalWordmark()
+                            .padding(.top, 28)
 
-                    Spacer(minLength: 24)
-                        .frame(maxHeight: geometry.size.height > 700 ? 116 : 52)
+                        Spacer(minLength: 24)
+                            .frame(height: geometry.size.height > 700 ? 116 : 52)
 
-                    content
+                        content
 
-                    Spacer(minLength: 12)
+                        Spacer(minLength: 24)
+                    }
+                    .padding(.horizontal, 30)
+                    .frame(maxWidth: 560)
+                    .frame(
+                        minHeight: geometry.size.height,
+                        alignment: .top
+                    )
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 30)
-                .frame(maxWidth: 560)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .scrollIndicators(.hidden)
+                .scrollDismissesKeyboard(.interactively)
+                .scrollBounceBehavior(.basedOnSize)
             }
         }
         .foregroundStyle(PremiumArrivalStyle.ink)
@@ -171,13 +193,20 @@ struct PremiumArrivalScaffold<Content: View>: View {
 }
 
 struct PremiumArrivalHeading: View {
+    @ScaledMetric(relativeTo: .largeTitle) private var titleSize: CGFloat = 44
     let title: LocalizedStringResource
     let message: LocalizedStringResource
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
             Text(title)
-                .font(.system(size: 44, weight: .regular, design: .serif))
+                .font(
+                    .system(
+                        size: min(titleSize, 54),
+                        weight: .regular,
+                        design: .serif
+                    )
+                )
                 .tracking(-1.1)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)

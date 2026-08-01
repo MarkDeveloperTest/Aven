@@ -6,6 +6,7 @@ import UIKit
 
 struct AuthenticationView: View {
     @Environment(AppSession.self) private var session
+    @ScaledMetric(relativeTo: .largeTitle) private var titleSize: CGFloat = 44
     @State private var currentNonce: String?
     let isEmbedded: Bool
 
@@ -21,16 +22,23 @@ struct AuthenticationView: View {
                 ZStack {
                     PremiumArrivalBackground()
 
-                    VStack(alignment: .leading, spacing: 0) {
-                        PremiumArrivalWordmark()
-                            .padding(.top, 28)
+                    GeometryReader { geometry in
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 0) {
+                                PremiumArrivalWordmark()
+                                    .padding(.top, 28)
 
-                        authenticationContent
+                                authenticationContent
+                            }
+                            .padding(.horizontal, 30)
+                            .padding(.bottom, 20)
+                            .frame(maxWidth: 560)
+                            .frame(minHeight: geometry.size.height, alignment: .top)
+                            .frame(maxWidth: .infinity)
+                        }
+                        .scrollIndicators(.hidden)
+                        .scrollBounceBehavior(.basedOnSize)
                     }
-                    .padding(.horizontal, 30)
-                    .padding(.bottom, 20)
-                    .frame(maxWidth: 560)
-                    .frame(maxWidth: .infinity)
                 }
             }
         }
@@ -45,7 +53,13 @@ struct AuthenticationView: View {
 
             VStack(alignment: .leading, spacing: 22) {
                 Text("auth.premium.title")
-                    .font(.system(size: 44, weight: .regular, design: .serif))
+                    .font(
+                        .system(
+                            size: min(titleSize, 54),
+                            weight: .regular,
+                            design: .serif
+                        )
+                    )
                     .tracking(-1.1)
                     .foregroundStyle(PremiumArrivalStyle.ink)
                     .fixedSize(horizontal: false, vertical: true)

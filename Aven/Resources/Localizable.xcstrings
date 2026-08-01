@@ -1267,13 +1267,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your private space is ready. You can invite your partner now or later."
+            "value" : "You and your partner are connected. Your private shared space is ready."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ваш приватний простір готовий. Запросити партнера можна зараз або пізніше."
+            "value" : "Ви з партнером з’єднані. Ваш приватний спільний простір готовий."
           }
         }
       }

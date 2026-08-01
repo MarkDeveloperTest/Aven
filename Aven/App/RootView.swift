@@ -18,7 +18,10 @@ struct RootView: View {
                 MainTabView()
             }
         }
-        .animation(reduceMotion ? nil : .snappy, value: session.phase)
+        .animation(
+            reduceMotion ? nil : .smooth(duration: 0.28),
+            value: session.phase
+        )
         .environment(\.locale, settings.language.locale)
         .preferredColorScheme(.light)
         .alert(
@@ -39,15 +42,25 @@ struct RootView: View {
 }
 
 private struct LaunchView: View {
-    @Environment(AppSettings.self) private var settings
-
     var body: some View {
         ZStack {
-            AvenBackground()
-            ProgressView()
-                .controlSize(.large)
-                .tint(settings.theme.palette.onBackground)
-                .accessibilityLabel(Text("launch.loading"))
+            PremiumArrivalBackground()
+
+            VStack(alignment: .leading, spacing: 0) {
+                PremiumArrivalWordmark()
+                    .padding(.top, 28)
+
+                Spacer()
+
+                ProgressView()
+                    .controlSize(.large)
+                    .tint(PremiumArrivalStyle.pinkInk)
+                    .frame(maxWidth: .infinity)
+                    .accessibilityLabel(Text("launch.loading"))
+
+                Spacer()
+            }
+            .padding(.horizontal, 30)
         }
     }
 }
