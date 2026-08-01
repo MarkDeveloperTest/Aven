@@ -32,7 +32,8 @@ describe("Firestore retention configuration", () => {
     expect(enabledTTLGroups).toEqual([
       "AIRequests",
       "internalRateLimits",
-      "invitations"
+      "invitations",
+      "pairingCodeLookups"
     ]);
   });
 });

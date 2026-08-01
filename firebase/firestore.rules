@@ -781,6 +781,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /pairingCodeLookups/{lookupId} {
+      allow read, write: if false;
+    }
+
     match /AIRequests/{requestId} {
       allow read, write: if false;
     }

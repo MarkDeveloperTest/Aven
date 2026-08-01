@@ -92,6 +92,7 @@ struct AuthenticationView: View {
 
             if AppBuildEnvironment.current.supportsGoogleAuthentication {
                 Button {
+                    AvenHaptics.shared.light()
                     Task { await signInWithGoogle() }
                 } label: {
                     Label("auth.google", systemImage: "g.circle.fill")
@@ -106,13 +107,29 @@ struct AuthenticationView: View {
                         .stroke(PremiumArrivalStyle.ink, lineWidth: 1)
                 }
                 .disabled(session.isWorking)
+                .buttonStyle(PremiumPressableButtonStyle())
                 .accessibilityIdentifier("auth.google")
             }
+
+            Button {
+                AvenHaptics.shared.light()
+                Task { await session.continueAsGuest() }
+            } label: {
+                Text("auth.guest")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(PremiumArrivalStyle.pinkInk)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 48)
+            }
+            .buttonStyle(PremiumPressableButtonStyle())
+            .disabled(session.isWorking)
+            .accessibilityIdentifier("auth.guest")
         }
     }
 
     private func prepareAppleRequest(_ request: ASAuthorizationAppleIDRequest) {
         guard session.isWorking == false else { return }
+        AvenHaptics.shared.light()
         do {
             let nonce = try SecureNonceGenerator.make()
             currentNonce = nonce

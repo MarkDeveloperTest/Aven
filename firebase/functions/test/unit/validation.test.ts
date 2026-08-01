@@ -4,8 +4,9 @@ import {
   archiveRelationshipInputSchema,
   createInvitationInputSchema,
   emergencyUnlinkInputSchema,
+  normalizeManualPairingCode,
   redeemInvitationInputSchema,
-  splitInvitationCode
+  splitLinkToken
 } from "../../src/validation";
 
 const idempotencyKey = "018f6f7e-1234-7abc-8def-123456789abc";
@@ -125,21 +126,40 @@ describe("callable input validation", () => {
     expect(duplicateSelection.success).toBe(false);
   });
 
-  it("parses only the expected opaque invitation format", () => {
+  it("parses link tokens and normalizes six-character manual codes", () => {
     const invitationId = "a".repeat(40);
     const secret = "B".repeat(43);
     const invitationCode = `${invitationId}.${secret}`;
 
     expect(
       redeemInvitationInputSchema.safeParse({
-        invitationCode,
+        kind: "token",
+        value: invitationCode,
         idempotencyKey
       }).success
     ).toBe(true);
-    expect(splitInvitationCode(invitationCode)).toEqual({
+    expect(splitLinkToken(invitationCode)).toEqual({
       invitationId,
       secret
     });
+
+    const manualResult = redeemInvitationInputSchema.safeParse({
+      kind: "code",
+      value: "abc-7k9",
+      idempotencyKey
+    });
+    expect(manualResult.success).toBe(true);
+    if (manualResult.success) {
+      expect(manualResult.data.value).toBe("ABC7K9");
+    }
+    expect(normalizeManualPairingCode(" ab c-7k9 ")).toBe("ABC7K9");
+    expect(
+      redeemInvitationInputSchema.safeParse({
+        kind: "code",
+        value: "O0I1AA",
+        idempotencyKey
+      }).success
+    ).toBe(false);
   });
 
   it("requires explicit emergency unlink confirmation", () => {

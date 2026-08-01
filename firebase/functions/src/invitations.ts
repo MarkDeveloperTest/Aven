@@ -10,29 +10,37 @@ import {
 } from "firebase-admin/firestore";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {requireAuthenticatedCaller} from "./auth";
-import {requireActiveUser} from "./authorization";
 import {pairingCallableOptions, invitationSigningSecret} from "./config";
 import {requireConfiguredSecret, runCallable} from "./errors";
 import {db} from "./firebase";
 import {logSecurityEvent} from "./logging";
-import {enforceRateLimit} from "./rateLimit";
+import {
+  applyRateLimit,
+  rateLimitBucket,
+  type RateLimitOptions
+} from "./rateLimit";
 import {
   createInvitationInputSchema,
+  type RedeemInvitationInput,
   parseInput,
   redeemInvitationInputSchema,
   revokeInvitationInputSchema,
-  splitInvitationCode,
+  splitLinkToken,
   type CreateInvitationInput
 } from "./validation";
 
-const INVITATION_LIFETIME_MILLIS = 7 * 24 * 60 * 60 * 1000;
+export const INVITATION_LIFETIME_MILLIS = 24 * 60 * 60 * 1000;
+const INVITATION_SCHEMA_VERSION = 2;
 const MAX_ATOMIC_INVITATION_REVOCATIONS = 400;
+const MANUAL_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
 interface DerivedInvitation {
   readonly invitationId: string;
   readonly secret: string;
-  readonly code: string;
-  readonly codeHash: string;
+  readonly linkToken: string;
+  readonly linkTokenHash: string;
+  readonly manualCode: string;
+  readonly manualCodeLookupId: string;
   readonly idempotencyKeyHash: string;
 }
 
@@ -56,14 +64,32 @@ function deriveInvitation(
   const secret = createHmac("sha256", signingSecret)
     .update(`aven-invitation-secret-v1\u0000${userId}\u0000${invitationId}`)
     .digest("base64url");
+  const manualCodeBytes = createHmac("sha256", signingSecret)
+    .update(`aven-invitation-manual-code-v1\u0000${userId}\u0000${invitationId}`)
+    .digest();
+  const manualCode = Array.from(
+    manualCodeBytes.subarray(0, 6),
+    (byte) => MANUAL_CODE_ALPHABET[byte & 31] ?? "2"
+  ).join("");
 
   return {
     invitationId,
     secret,
-    code: `${invitationId}.${secret}`,
-    codeHash: sha256(secret),
+    linkToken: `${invitationId}.${secret}`,
+    linkTokenHash: sha256(secret),
+    manualCode,
+    manualCodeLookupId: manualCodeLookupId(manualCode, signingSecret),
     idempotencyKeyHash: sha256(idempotencyKey)
   };
+}
+
+function manualCodeLookupId(
+  manualCode: string,
+  signingSecret: string
+): string {
+  return createHmac("sha256", signingSecret)
+    .update(`aven-invitation-code-lookup-v1\u0000${manualCode}`)
+    .digest("hex");
 }
 
 function invitationSecretMatches(
@@ -82,19 +108,41 @@ function invitationSecretMatches(
   return supplied.length === stored.length && timingSafeEqual(supplied, stored);
 }
 
+function requireCurrentInvitation(invitation: DocumentData | undefined): void {
+  if (invitation?.["schemaVersion"] !== INVITATION_SCHEMA_VERSION) {
+    throw new HttpsError(
+      "failed-precondition",
+      "The invitation is no longer supported."
+    );
+  }
+}
+
+function requireManualCodeLookupId(value: unknown): string {
+  if (typeof value !== "string" || !/^[a-f0-9]{64}$/u.test(value)) {
+    throw new HttpsError("internal", "The invitation lookup is invalid.");
+  }
+  return value;
+}
+
 function requireActiveUnpairedUser(
+  user: DocumentData | undefined
+): void {
+  requireActiveAccount(user);
+  if (user?.["activeRelationshipId"] !== null) {
+    throw new HttpsError(
+      "failed-precondition",
+      "The account is already in an active relationship."
+    );
+  }
+}
+
+function requireActiveAccount(
   user: DocumentData | undefined
 ): void {
   if (user?.["accountState"] !== "active") {
     throw new HttpsError(
       "failed-precondition",
       "The account is not active."
-    );
-  }
-  if (user["activeRelationshipId"] !== null) {
-    throw new HttpsError(
-      "failed-precondition",
-      "The account is already in an active relationship."
     );
   }
 }
@@ -152,13 +200,13 @@ export const createInvitation = onCall(
         createInvitationInputSchema,
         request.data
       );
-      await requireActiveUser(caller.uid);
-      await enforceRateLimit({
+      const rateLimitOptions: RateLimitOptions = {
         userId: caller.uid,
         operation: "createInvitation",
         limit: 5,
         windowSeconds: 60 * 60
-      });
+      };
+      const rateLimit = rateLimitBucket(rateLimitOptions);
 
       const signingSecret = requireConfiguredSecret(
         invitationSigningSecret.value(),
@@ -172,21 +220,43 @@ export const createInvitation = onCall(
       const invitationReference = db.doc(
         `invitations/${derived.invitationId}`
       );
+      const manualCodeLookupReference = db.doc(
+        `pairingCodeLookups/${derived.manualCodeLookupId}`
+      );
       const userReference = db.doc(`users/${caller.uid}`);
 
       const result = await db.runTransaction(async (transaction) => {
-        const [userSnapshot, invitationSnapshot] = await Promise.all([
+        const [
+          userSnapshot,
+          invitationSnapshot,
+          manualCodeLookupSnapshot,
+          rateLimitSnapshot
+        ] = await Promise.all([
           transaction.get(userReference),
-          transaction.get(invitationReference)
+          transaction.get(invitationReference),
+          transaction.get(manualCodeLookupReference),
+          transaction.get(rateLimit.reference)
         ]);
         requireActiveUnpairedUser(userSnapshot.data());
+        applyRateLimit(
+          transaction,
+          rateLimitSnapshot,
+          rateLimit,
+          rateLimitOptions
+        );
 
         if (invitationSnapshot.exists) {
+          requireCurrentInvitation(invitationSnapshot.data());
           if (
             invitationSnapshot.get("creatorId") !== caller.uid
             || invitationSnapshot.get("idempotencyKeyHash")
               !== derived.idempotencyKeyHash
-            || invitationSnapshot.get("codeHash") !== derived.codeHash
+            || invitationSnapshot.get("linkTokenHash")
+              !== derived.linkTokenHash
+            || invitationSnapshot.get("manualCode")
+              !== derived.manualCode
+            || invitationSnapshot.get("manualCodeLookupId")
+              !== derived.manualCodeLookupId
           ) {
             throw new HttpsError(
               "already-exists",
@@ -201,19 +271,40 @@ export const createInvitation = onCall(
           }
 
           const expiresAt: unknown = invitationSnapshot.get("expiresAt");
-          if (!(expiresAt instanceof Timestamp) || expiresAt.toMillis() <= Date.now()) {
+          if (
+            !(expiresAt instanceof Timestamp)
+            || expiresAt.toMillis() <= Timestamp.now().toMillis()
+          ) {
             throw new HttpsError(
               "failed-precondition",
               "The invitation has expired."
             );
           }
+          if (
+            !manualCodeLookupSnapshot.exists
+            || manualCodeLookupSnapshot.get("invitationId")
+              !== derived.invitationId
+          ) {
+            throw new HttpsError(
+              "failed-precondition",
+              "The invitation lookup is unavailable."
+            );
+          }
 
           return {
-            invitationCode: derived.code,
+            linkToken: derived.linkToken,
+            manualCode: derived.manualCode,
             invitationId: derived.invitationId,
             expiresAt: expiresAt.toDate().toISOString(),
             reused: true
           };
+        }
+
+        if (manualCodeLookupSnapshot.exists) {
+          throw new HttpsError(
+            "resource-exhausted",
+            "A manual invitation code collision occurred. Retry with a new request."
+          );
         }
 
         const now = Timestamp.now();
@@ -222,7 +313,9 @@ export const createInvitation = onCall(
         );
         transaction.create(invitationReference, {
           creatorId: caller.uid,
-          codeHash: derived.codeHash,
+          linkTokenHash: derived.linkTokenHash,
+          manualCode: derived.manualCode,
+          manualCodeLookupId: derived.manualCodeLookupId,
           idempotencyKeyHash: derived.idempotencyKeyHash,
           relationshipType: input.relationshipType,
           relationshipStartDate: relationshipStartTimestamp(input),
@@ -230,6 +323,12 @@ export const createInvitation = onCall(
           expiresAt,
           createdAt: now,
           updatedAt: now,
+          schemaVersion: INVITATION_SCHEMA_VERSION
+        });
+        transaction.create(manualCodeLookupReference, {
+          invitationId: derived.invitationId,
+          expiresAt,
+          createdAt: now,
           schemaVersion: 1
         });
         writeAuditEvent(
@@ -241,7 +340,8 @@ export const createInvitation = onCall(
         );
 
         return {
-          invitationCode: derived.code,
+          linkToken: derived.linkToken,
+          manualCode: derived.manualCode,
           invitationId: derived.invitationId,
           expiresAt: expiresAt.toDate().toISOString(),
           reused: false
@@ -268,20 +368,26 @@ export const revokeInvitation = onCall(
         revokeInvitationInputSchema,
         request.data
       );
-      await requireActiveUser(caller.uid);
-      await enforceRateLimit({
+      const rateLimitOptions: RateLimitOptions = {
         userId: caller.uid,
         operation: "revokeInvitation",
         limit: 20,
         windowSeconds: 60 * 60
-      });
+      };
+      const rateLimit = rateLimitBucket(rateLimitOptions);
 
       const invitationReference = db.doc(
         `invitations/${input.invitationId}`
       );
+      const userReference = db.doc(`users/${caller.uid}`);
       const idempotencyKeyHash = sha256(input.idempotencyKey);
       const result = await db.runTransaction(async (transaction) => {
-        const invitation = await transaction.get(invitationReference);
+        const [invitation, user, rateLimitSnapshot] = await Promise.all([
+          transaction.get(invitationReference),
+          transaction.get(userReference),
+          transaction.get(rateLimit.reference)
+        ]);
+        requireActiveAccount(user.data());
         if (
           !invitation.exists
           || invitation.get("creatorId") !== caller.uid
@@ -291,6 +397,13 @@ export const revokeInvitation = onCall(
             "The invitation was not found."
           );
         }
+        requireCurrentInvitation(invitation.data());
+        applyRateLimit(
+          transaction,
+          rateLimitSnapshot,
+          rateLimit,
+          rateLimitOptions
+        );
 
         const status: unknown = invitation.get("status");
         if (status === "revoked") {
@@ -304,12 +417,16 @@ export const revokeInvitation = onCall(
         }
 
         const now = Timestamp.now();
+        const lookupId = requireManualCodeLookupId(
+          invitation.get("manualCodeLookupId")
+        );
         transaction.update(invitationReference, {
           status: "revoked",
           revokedAt: now,
           revocationIdempotencyKeyHash: idempotencyKeyHash,
           updatedAt: now
         });
+        transaction.delete(db.doc(`pairingCodeLookups/${lookupId}`));
         writeAuditEvent(
           transaction,
           "invitation.revoked",
@@ -331,26 +448,29 @@ export const revokeInvitation = onCall(
 );
 
 export const redeemInvitation = onCall(
-  pairingCallableOptions,
+  {
+    ...pairingCallableOptions,
+    secrets: [invitationSigningSecret]
+  },
   async (request) => {
     const caller = requireAuthenticatedCaller(request);
 
     return runCallable("redeemInvitation", caller.uid, async () => {
-      const input = parseInput(
+      const input: RedeemInvitationInput = parseInput(
         redeemInvitationInputSchema,
         request.data
       );
-      const code = splitInvitationCode(input.invitationCode);
-      await requireActiveUser(caller.uid);
-      await enforceRateLimit({
+      const rateLimitOptions: RateLimitOptions = {
         userId: caller.uid,
         operation: "redeemInvitation",
         limit: 10,
         windowSeconds: 60 * 60
-      });
+      };
+      const rateLimit = rateLimitBucket(rateLimitOptions);
 
-      const invitationReference = db.doc(
-        `invitations/${code.invitationId}`
+      const signingSecret = requireConfiguredSecret(
+        invitationSigningSecret.value(),
+        "Invitation signing secret"
       );
       const redeemerReference = db.doc(`users/${caller.uid}`);
       const relationshipReference = db.collection("relationships").doc();
@@ -358,14 +478,56 @@ export const redeemInvitation = onCall(
 
       const result = await db.runTransaction<RedemptionResult>(
         async (transaction) => {
+          let invitationId: string;
+          let suppliedSecret: string | undefined;
+
+          if (input.kind === "token") {
+            const token = splitLinkToken(input.value);
+            invitationId = token.invitationId;
+            suppliedSecret = token.secret;
+          } else {
+            const lookupId = manualCodeLookupId(
+              input.value,
+              signingSecret
+            );
+            const lookup = await transaction.get(
+              db.doc(`pairingCodeLookups/${lookupId}`)
+            );
+            const resolvedInvitationId: unknown = lookup.get("invitationId");
+            if (
+              !lookup.exists
+              || typeof resolvedInvitationId !== "string"
+              || !/^[a-f0-9]{40}$/u.test(resolvedInvitationId)
+            ) {
+              throw new HttpsError(
+                "not-found",
+                "The invitation was not found."
+              );
+            }
+            invitationId = resolvedInvitationId;
+          }
+
+          const invitationReference = db.doc(
+            `invitations/${invitationId}`
+          );
           const invitation = await transaction.get(invitationReference);
-          if (
-            !invitation.exists
-            || !invitationSecretMatches(
-              code.secret,
-              invitation.get("codeHash")
-            )
-          ) {
+          if (!invitation.exists) {
+            throw new HttpsError(
+              "not-found",
+              "The invitation was not found."
+            );
+          }
+          requireCurrentInvitation(invitation.data());
+
+          const credentialMatches = suppliedSecret === undefined
+            ? invitation.get("manualCode") === input.value
+              && invitation.get("manualCodeLookupId")
+                === manualCodeLookupId(input.value, signingSecret)
+            : invitationSecretMatches(
+              suppliedSecret,
+              invitation.get("linkTokenHash")
+            );
+          if (!credentialMatches) {
             throw new HttpsError(
               "not-found",
               "The invitation was not found."
@@ -397,8 +559,12 @@ export const redeemInvitation = onCall(
             );
           }
 
+          const now = Timestamp.now();
           const expiresAt: unknown = invitation.get("expiresAt");
-          if (!(expiresAt instanceof Timestamp) || expiresAt.toMillis() <= Date.now()) {
+          if (
+            !(expiresAt instanceof Timestamp)
+            || expiresAt.toMillis() <= now.toMillis()
+          ) {
             throw new HttpsError(
               "failed-precondition",
               "The invitation has expired."
@@ -414,9 +580,10 @@ export const redeemInvitation = onCall(
           }
 
           const creatorReference = db.doc(`users/${creatorId}`);
-          const [creator, redeemer] = await Promise.all([
+          const [creator, redeemer, rateLimitSnapshot] = await Promise.all([
             transaction.get(creatorReference),
-            transaction.get(redeemerReference)
+            transaction.get(redeemerReference),
+            transaction.get(rateLimit.reference)
           ]);
           requireActiveUnpairedUser(creator.data());
           requireActiveUnpairedUser(redeemer.data());
@@ -431,7 +598,7 @@ export const redeemInvitation = onCall(
               .limit(MAX_ATOMIC_INVITATION_REVOCATIONS + 2)
           );
           const otherPendingInvitations = pendingInvitations.docs.filter(
-            (candidate) => candidate.id !== code.invitationId
+            (candidate) => candidate.id !== invitationId
           );
           if (
             otherPendingInvitations.length
@@ -472,7 +639,13 @@ export const redeemInvitation = onCall(
             );
           }
 
-          const now = Timestamp.now();
+          applyRateLimit(
+            transaction,
+            rateLimitSnapshot,
+            rateLimit,
+            rateLimitOptions
+          );
+
           const relationshipId = relationshipReference.id;
           const memberIds = [creatorId, caller.uid];
           transaction.create(relationshipReference, {
@@ -489,7 +662,7 @@ export const redeemInvitation = onCall(
             theme: "default",
             settings: {},
             currentLifecycleRequest: null,
-            sourceInvitationId: code.invitationId,
+            sourceInvitationId: invitationId,
             schemaVersion: 1
           });
 
@@ -560,13 +733,19 @@ export const redeemInvitation = onCall(
               revocationReason: "relationship_created",
               updatedAt: now
             });
+            const lookupId: unknown = pendingInvitation.get(
+              "manualCodeLookupId"
+            );
+            if (typeof lookupId === "string" && /^[a-f0-9]{64}$/u.test(lookupId)) {
+              transaction.delete(db.doc(`pairingCodeLookups/${lookupId}`));
+            }
           }
           writeAuditEvent(
             transaction,
             "invitation.redeemed",
             caller.uid,
             {
-              invitationId: code.invitationId,
+              invitationId,
               relationshipId,
               revokedInvitationCount:
                 String(otherPendingInvitations.length)

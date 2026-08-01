@@ -12,6 +12,11 @@ nonisolated struct StoredPairingState: Codable, Equatable, Sendable {
     let ownerUserID: String?
     let idempotencyKey: String?
     let invitationID: String?
+    let credentialKind: PairingCredential.Kind?
+    let credentialValue: String?
+    let invitationLinkToken: String?
+    let invitationManualCode: String?
+    /// Retained only so version-one Keychain payloads decode and fail closed.
     let invitationCode: String?
     let invitationExpiresAt: Date?
     let revocationIdempotencyKey: String?
@@ -25,6 +30,10 @@ nonisolated struct StoredPairingState: Codable, Equatable, Sendable {
             ownerUserID: ownerUserID,
             idempotencyKey: idempotencyKey,
             invitationID: nil,
+            credentialKind: nil,
+            credentialValue: nil,
+            invitationLinkToken: nil,
+            invitationManualCode: nil,
             invitationCode: nil,
             invitationExpiresAt: nil,
             revocationIdempotencyKey: nil
@@ -34,14 +43,18 @@ nonisolated struct StoredPairingState: Codable, Equatable, Sendable {
     static func redeemInvitation(
         ownerUserID: String?,
         idempotencyKey: String,
-        invitationCode: String
+        credential: PairingCredential
     ) -> Self {
         Self(
             kind: .redeemInvitation,
             ownerUserID: ownerUserID,
             idempotencyKey: idempotencyKey,
             invitationID: nil,
-            invitationCode: invitationCode,
+            credentialKind: credential.kind,
+            credentialValue: credential.value,
+            invitationLinkToken: nil,
+            invitationManualCode: nil,
+            invitationCode: nil,
             invitationExpiresAt: nil,
             revocationIdempotencyKey: nil
         )
@@ -57,7 +70,11 @@ nonisolated struct StoredPairingState: Codable, Equatable, Sendable {
             ownerUserID: ownerUserID,
             idempotencyKey: nil,
             invitationID: invitation.id,
-            invitationCode: invitation.code,
+            credentialKind: nil,
+            credentialValue: nil,
+            invitationLinkToken: invitation.linkToken,
+            invitationManualCode: invitation.manualCode,
+            invitationCode: nil,
             invitationExpiresAt: invitation.expiresAt,
             revocationIdempotencyKey: revocationIdempotencyKey
         )
@@ -76,15 +93,32 @@ nonisolated struct StoredPairingState: Codable, Equatable, Sendable {
         case .createInvitation:
             return idempotencyKey != nil
                 && invitationID == nil
+                && credentialKind == nil
+                && credentialValue == nil
+                && invitationLinkToken == nil
+                && invitationManualCode == nil
                 && invitationCode == nil
                 && invitationExpiresAt == nil
                 && revocationIdempotencyKey == nil
         case .redeemInvitation:
-            return idempotencyKey != nil
-                && invitationID == nil
-                && invitationCode.map(PairingInvitation.isValidCode) == true
-                && invitationExpiresAt == nil
-                && revocationIdempotencyKey == nil
+            guard
+                idempotencyKey != nil,
+                invitationID == nil,
+                let credentialKind,
+                let credentialValue,
+                invitationLinkToken == nil,
+                invitationManualCode == nil,
+                invitationCode == nil,
+                invitationExpiresAt == nil,
+                revocationIdempotencyKey == nil
+            else {
+                return false
+            }
+            let credential: PairingCredential = switch credentialKind {
+            case .token: .linkToken(credentialValue)
+            case .code: .manualCode(credentialValue)
+            }
+            return credential.isValid
         case .invitation:
             guard
                 ownerUserID != nil,
@@ -94,9 +128,14 @@ nonisolated struct StoredPairingState: Codable, Equatable, Sendable {
                     of: #"^[a-f0-9]{40}$"#,
                     options: .regularExpression
                 ) != nil,
-                let invitationCode,
-                PairingInvitation.isValidCode(invitationCode),
-                invitationCode.hasPrefix(invitationID + "."),
+                let invitationLinkToken,
+                PairingInvitation.isValidLinkToken(invitationLinkToken),
+                invitationLinkToken.hasPrefix(invitationID + "."),
+                let invitationManualCode,
+                PairingInvitation.isValidManualCode(invitationManualCode),
+                credentialKind == nil,
+                credentialValue == nil,
+                invitationCode == nil,
                 let invitationExpiresAt,
                 invitationExpiresAt > now
             else {

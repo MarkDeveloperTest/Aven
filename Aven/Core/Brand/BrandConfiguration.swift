@@ -23,7 +23,7 @@ nonisolated struct BrandConfiguration: Sendable {
         websiteURL: placeholderURL("https://example.com"),
         analyticsNamespace: "aven",
         firebaseEnvironmentName: AppBuildEnvironment.current.rawValue,
-        deepLinkHost: "links.example.com",
+        deepLinkHost: AppBuildEnvironment.current.pairingLinkHost ?? "",
         defaultAccent: Color(red: 0.91, green: 0.30, blue: 0.48)
     )
 

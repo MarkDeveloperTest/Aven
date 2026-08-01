@@ -26,4 +26,13 @@ nonisolated enum AppBuildEnvironment: String, CaseIterable, Sendable {
         return nil
         #endif
     }
+
+    var pairingLinkHost: String? {
+        switch self {
+        case .development:
+            "aven-ios-dev-4f7c2.web.app"
+        case .staging, .production:
+            nil
+        }
+    }
 }

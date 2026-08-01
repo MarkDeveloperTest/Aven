@@ -5,6 +5,9 @@ import Observation
 @Observable
 final class AppSession {
     static let localOnboardingDraftUserID = "local-onboarding-draft"
+    #if DEBUG
+    static let simulatorUserID = "simulator-local-user"
+    #endif
 
     nonisolated enum Phase: Equatable, Sendable {
         case launching
@@ -34,6 +37,15 @@ final class AppSession {
 
     func start() async {
         guard phase == .launching else { return }
+
+        #if DEBUG && targetEnvironment(simulator)
+        if ProcessInfo.processInfo.arguments.contains("-ui-testing-guest-sign-in") {
+            user = nil
+            profile = nil
+            phase = .onboarding
+            return
+        }
+        #endif
 
         if ProcessInfo.processInfo.arguments.contains("-ui-testing-onboarding") {
             user = AuthenticatedUser(
@@ -95,8 +107,36 @@ final class AppSession {
         }
     }
 
+    func continueAsGuest() async {
+        #if DEBUG && targetEnvironment(simulator)
+        guard isWorking == false else { return }
+        presentedError = nil
+        user = AuthenticatedUser(
+            id: Self.simulatorUserID,
+            displayName: "Simulator Guest",
+            email: nil
+        )
+        profile = nil
+        phase = .onboarding
+        return
+        #else
+        await performAuthentication {
+            try await environment.authenticationRepository.signInAnonymously()
+        }
+        #endif
+    }
+
     func completeOnboarding(with profile: UserProfile) async {
         guard isWorking == false else { return }
+
+        #if DEBUG && targetEnvironment(simulator)
+        if user?.id == Self.simulatorUserID {
+            self.profile = profile
+            phase = .authenticated
+            return
+        }
+        #endif
+
         isWorking = true
         defer { isWorking = false }
         do {
@@ -121,6 +161,13 @@ final class AppSession {
             return
         }
 
+        #if DEBUG && targetEnvironment(simulator)
+        if user?.id == Self.simulatorUserID {
+            self.profile = profile
+            return
+        }
+        #endif
+
         isWorking = true
         defer { isWorking = false }
         do {
@@ -136,6 +183,14 @@ final class AppSession {
 
     func signOut() async {
         guard isWorking == false else { return }
+
+        #if DEBUG && targetEnvironment(simulator)
+        if user?.id == Self.simulatorUserID {
+            resetLocalSession()
+            return
+        }
+        #endif
+
         isWorking = true
         defer { isWorking = false }
         do {
@@ -152,6 +207,14 @@ final class AppSession {
 
     func deleteAccount() async {
         guard isWorking == false else { return }
+
+        #if DEBUG && targetEnvironment(simulator)
+        if user?.id == Self.simulatorUserID {
+            resetLocalSession()
+            return
+        }
+        #endif
+
         isWorking = true
         defer { isWorking = false }
         do {
@@ -223,5 +286,12 @@ final class AppSession {
         profile == nil || OnboardingStore.hasSavedProgress(
             for: Self.localOnboardingDraftUserID
         )
+    }
+
+    private func resetLocalSession() {
+        OnboardingStore.clearProgress(for: Self.localOnboardingDraftUserID)
+        user = nil
+        profile = nil
+        phase = .onboarding
     }
 }

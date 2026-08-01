@@ -26,6 +26,10 @@ actor UnavailableAuthenticationRepository: AuthenticationRepository {
         throw AppError.authentication(.notConfigured)
     }
 
+    func signInAnonymously() throws -> AuthenticatedUser {
+        throw AppError.authentication(.notConfigured)
+    }
+
     func signOut() throws {
         throw AppError.authentication(.notConfigured)
     }

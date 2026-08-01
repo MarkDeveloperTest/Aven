@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "284W99L8L3.com.example.aven.dev"
+        ],
+        "components": [
+          {
+            "/": "/invite/*",
+            "comment": "Open 24-hour Aven partner invitations"
+          }
+        ]
+      }
+    ]
+  }
+}

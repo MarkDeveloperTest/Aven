@@ -242,7 +242,7 @@ describe("Firestore relationship boundaries", () => {
     );
   });
 
-  it("denies direct invitation reads and replay writes", async () => {
+  it("denies direct invitation and manual-code lookup access", async () => {
     await seedRelationship();
     await testEnvironment.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), "invitations/invite1"), {
@@ -251,14 +251,21 @@ describe("Firestore relationship boundaries", () => {
         redeemedBy: "bob",
         createdAt: Timestamp.fromMillis(1_700_000_000_000)
       });
+      await setDoc(doc(context.firestore(), "pairingCodeLookups/lookup1"), {
+        invitationId: "invite1",
+        expiresAt: Timestamp.fromMillis(1_700_003_600_000)
+      });
     });
     const alice = testEnvironment
       .authenticatedContext("alice")
       .firestore();
     const invitation = doc(alice, "invitations/invite1");
+    const lookup = doc(alice, "pairingCodeLookups/lookup1");
 
     await assertFails(getDoc(invitation));
     await assertFails(updateDoc(invitation, {status: "pending"}));
+    await assertFails(getDoc(lookup));
+    await assertFails(updateDoc(lookup, {invitationId: "other"}));
   });
 
   it("allows archived reads but denies archived writes", async () => {

@@ -1,10 +1,11 @@
-import CoreImage
+@preconcurrency import CoreImage
 import CoreImage.CIFilterBuiltins
 import SwiftUI
 import UIKit
 
 struct PairingQRCodeView: View {
     @Environment(\.displayScale) private var displayScale
+    @State private var renderedCode: RenderedPairingQRCode?
 
     private let quietZone: CGFloat = 18
     private let payload: String
@@ -12,19 +13,13 @@ struct PairingQRCodeView: View {
 
     init(
         payload: String,
-        size: CGFloat = 224
+        size: CGFloat = 176
     ) {
         self.payload = payload
         self.size = size
     }
 
     var body: some View {
-        let renderedCode = Self.render(
-            payload: payload,
-            maximumPointSize: max(size - quietZone * 2, 1),
-            displayScale: displayScale
-        )
-
         Group {
             if let renderedCode {
                 Image(uiImage: renderedCode.image)
@@ -35,9 +30,8 @@ struct PairingQRCodeView: View {
                         height: renderedCode.pointSize
                     )
             } else {
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.title)
-                    .foregroundStyle(PremiumArrivalStyle.mutedInk)
+                ProgressView()
+                    .tint(PremiumArrivalStyle.pinkInk)
             }
         }
         .frame(width: size, height: size)
@@ -50,14 +44,54 @@ struct PairingQRCodeView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("pairing.scan.qr.accessibility"))
         .accessibilityHint(Text("pairing.scan.qr.hint"))
+        .task(id: renderRequest) {
+            renderedCode = await PairingQRCodeRenderer.shared.render(
+                payload: payload,
+                maximumPointSize: max(size - quietZone * 2, 1),
+                displayScale: displayScale
+            )
+        }
     }
 
-    @MainActor
-    private static func render(
+    private var renderRequest: PairingQRCodeRenderRequest {
+        PairingQRCodeRenderRequest(
+            payload: payload,
+            maximumPointSize: max(size - quietZone * 2, 1),
+            displayScale: displayScale
+        )
+    }
+}
+
+private struct PairingQRCodeRenderRequest: Hashable, Sendable {
+    let payload: String
+    let maximumPointSize: CGFloat
+    let displayScale: CGFloat
+}
+
+private struct RenderedPairingQRCode: @unchecked Sendable {
+    let image: UIImage
+    let pointSize: CGFloat
+}
+
+private actor PairingQRCodeRenderer {
+    static let shared = PairingQRCodeRenderer()
+
+    private let context = CIContext(options: [.useSoftwareRenderer: false])
+    private var cache: [PairingQRCodeRenderRequest: RenderedPairingQRCode] = [:]
+
+    func render(
         payload: String,
         maximumPointSize: CGFloat,
         displayScale: CGFloat
-    ) -> RenderedQRCode? {
+    ) -> RenderedPairingQRCode? {
+        let request = PairingQRCodeRenderRequest(
+            payload: payload,
+            maximumPointSize: maximumPointSize,
+            displayScale: displayScale
+        )
+        if let cached = cache[request] {
+            return cached
+        }
         guard AppBuildEnvironment.allCases.contains(where: { environment in
             PairingQRCodePayload.parse(payload, environment: environment) != nil
         }) else {
@@ -67,14 +101,12 @@ struct PairingQRCodeView: View {
         let generator = CIFilter.qrCodeGenerator()
         generator.message = Data(payload.utf8)
         generator.correctionLevel = "M"
-
         guard let generatedImage = generator.outputImage else { return nil }
 
         let falseColor = CIFilter.falseColor()
         falseColor.inputImage = generatedImage
         falseColor.color0 = CIColor.black
         falseColor.color1 = CIColor.white
-
         guard let opaqueImage = falseColor.outputImage else { return nil }
 
         let screenScale = max(displayScale, 1)
@@ -85,8 +117,6 @@ struct PairingQRCodeView: View {
         let scaledImage = opaqueImage.transformed(
             by: CGAffineTransform(scaleX: pixelScale, y: pixelScale)
         )
-        let context = CIContext(options: [.useSoftwareRenderer: false])
-
         guard let cgImage = context.createCGImage(
             scaledImage,
             from: scaledImage.extent.integral
@@ -94,15 +124,14 @@ struct PairingQRCodeView: View {
             return nil
         }
 
-        let pointSize = scaledImage.extent.width / screenScale
-        return RenderedQRCode(
+        let rendered = RenderedPairingQRCode(
             image: UIImage(cgImage: cgImage, scale: screenScale, orientation: .up),
-            pointSize: pointSize
+            pointSize: scaledImage.extent.width / screenScale
         )
+        if cache.count >= 16 {
+            cache.removeAll(keepingCapacity: true)
+        }
+        cache[request] = rendered
+        return rendered
     }
-}
-
-private struct RenderedQRCode {
-    let image: UIImage
-    let pointSize: CGFloat
 }

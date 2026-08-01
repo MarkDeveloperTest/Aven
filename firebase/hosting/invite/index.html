@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#fff6f9">
+    <title>Open your Aven invitation</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+        color: #171616;
+        background: #fff;
+      }
+      * { box-sizing: border-box; }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #fff 42%, #fff1f6 100%);
+      }
+      main {
+        width: min(100% - 40px, 480px);
+        padding: 48px 32px;
+      }
+      .wordmark {
+        margin: 0 0 72px;
+        font-size: 18px;
+        font-weight: 400;
+        letter-spacing: 7px;
+      }
+      .mark {
+        width: 76px;
+        height: 76px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 28px;
+        border-radius: 50%;
+        color: #b8617f;
+        background: #ffe6ef;
+        font-size: 34px;
+      }
+      h1 {
+        margin: 0 0 18px;
+        font-family: ui-serif, Georgia, serif;
+        font-size: clamp(40px, 11vw, 52px);
+        font-weight: 400;
+        line-height: 1.02;
+        letter-spacing: -1.1px;
+      }
+      p {
+        margin: 0;
+        color: #575454;
+        font-size: 17px;
+        line-height: 1.55;
+      }
+      .note {
+        margin-top: 32px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(0, 0, 0, 0.14);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="wordmark">AVEN</div>
+      <div class="mark" aria-hidden="true">♥</div>
+      <h1>Your invitation is ready</h1>
+      <p>Install Aven from TestFlight or the App Store, then return to the message from your partner and open this same link again.</p>
+      <p class="note">Invitations expire 24 hours after they are created. If this one has expired, ask your partner to make a new invitation.</p>
+    </main>
+  </body>
+</html>

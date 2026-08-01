@@ -19,8 +19,11 @@ final class UnavailableRelationshipRepository: RelationshipRepository {
         throw AppError.externalConfigurationRequired
     }
 
-    func redeemInvitation(code: String, idempotencyKey: String) async throws -> String {
-        _ = code
+    func redeemInvitation(
+        credential: PairingCredential,
+        idempotencyKey: String
+    ) async throws -> String {
+        _ = credential
         _ = idempotencyKey
         throw AppError.externalConfigurationRequired
     }

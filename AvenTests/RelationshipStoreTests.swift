@@ -36,7 +36,7 @@ struct RelationshipStoreTests {
         )
         #expect(store.invitation == repository.invitationResult)
         #expect(store.relationship.status == .invitationPending)
-        #expect(store.relationship.inviteCode == repository.invitationResult.code)
+        #expect(store.relationship.inviteCode == repository.invitationResult.manualCode)
         #expect(store.deferredPairingState == .none)
         #expect(store.pairingError == nil)
     }
@@ -48,7 +48,7 @@ struct RelationshipStoreTests {
         let user = makeUser(id: "user-a")
         let profile = makeProfile(userID: user.id)
 
-        store.redeemInvitation(code: validInvitationCode)
+        store.redeemInvitation(credential: .linkToken(validInvitationCode))
 
         #expect(store.deferredPairingState == .redeemInvitation)
         #expect(repository.redeemCalls.isEmpty)
@@ -58,7 +58,7 @@ struct RelationshipStoreTests {
         #expect(await waitUntil {
             repository.redeemCalls.count == 1 && store.isPairing == false
         })
-        #expect(repository.redeemCalls == [validInvitationCode])
+        #expect(repository.redeemCalls == [.linkToken(validInvitationCode)])
         #expect(store.relationship.id == repository.redeemedRelationshipID)
         #expect(store.relationship.status == .active)
         #expect(store.relationship.memberIDs == [user.id])
@@ -74,7 +74,7 @@ struct RelationshipStoreTests {
         let user = makeUser(id: "user-a")
         store.prepare(for: user, profile: makeProfile(userID: user.id))
 
-        store.redeemInvitation(code: "not-an-invitation")
+        store.redeemInvitation(credential: .linkToken("not-an-invitation"))
 
         #expect(repository.redeemCalls.isEmpty)
         #expect(store.deferredPairingState == .none)
@@ -116,7 +116,7 @@ struct RelationshipStoreTests {
         let user = makeUser(id: "user-a")
         store.prepare(for: user, profile: makeProfile(userID: user.id))
 
-        store.redeemInvitation(code: validInvitationCode)
+        store.redeemInvitation(credential: .linkToken(validInvitationCode))
         #expect(await waitUntil {
             store.pairingError == .offline && store.isPairing == false
         })
@@ -137,7 +137,7 @@ struct RelationshipStoreTests {
         let user = makeUser(id: "user-a")
         store.prepare(for: user, profile: makeProfile(userID: user.id))
 
-        store.redeemInvitation(code: validInvitationCode)
+        store.redeemInvitation(credential: .linkToken(validInvitationCode))
 
         #expect(await waitUntil {
             store.pairingError == .relationship(.inviteExpired)
@@ -240,7 +240,7 @@ struct RelationshipStoreTests {
         let user = makeUser(id: "user-a")
         store.prepare(for: user, profile: makeProfile(userID: user.id))
 
-        store.redeemInvitation(code: validInvitationCode)
+        store.redeemInvitation(credential: .linkToken(validInvitationCode))
         #expect(await waitUntil {
             repository.hasSuspendedRedeem && store.isPairing
         })
@@ -305,7 +305,7 @@ struct RelationshipStoreTests {
             repository: FakeRelationshipRepository(),
             pairingIntentVault: vault
         )
-        firstStore.redeemInvitation(code: validInvitationCode)
+        firstStore.redeemInvitation(credential: .linkToken(validInvitationCode))
 
         let savedState = try #require(
             await waitForVaultState(vault, kind: .redeemInvitation)
@@ -434,7 +434,7 @@ struct RelationshipStoreTests {
             state: .redeemInvitation(
                 ownerUserID: nil,
                 idempotencyKey: UUID().uuidString.lowercased(),
-                invitationCode: validInvitationCode
+                credential: .linkToken(validInvitationCode)
             ),
             loadFailuresRemaining: 1
         )
@@ -458,7 +458,7 @@ struct RelationshipStoreTests {
             repository: repository,
             pairingIntentVault: vault
         )
-        store.redeemInvitation(code: validInvitationCode)
+        store.redeemInvitation(credential: .linkToken(validInvitationCode))
         let unownedState = try #require(
             await waitForVaultState(vault, kind: .redeemInvitation)
         )
@@ -486,7 +486,7 @@ struct RelationshipStoreTests {
         let user = makeUser(id: "user-a")
         store.prepare(for: user, profile: makeProfile(userID: user.id))
 
-        store.redeemInvitation(code: validInvitationCode)
+        store.redeemInvitation(credential: .linkToken(validInvitationCode))
         #expect(await waitUntil {
             repository.hasSuspendedRedeem && store.isPairing
         })
@@ -713,16 +713,17 @@ private final class FakeRelationshipRepository: RelationshipRepository {
 
     let invitationResult = PairingInvitation(
         id: String(repeating: "a", count: 40),
-        code: String(repeating: "a", count: 40)
+        linkToken: String(repeating: "a", count: 40)
             + "."
             + String(repeating: "B", count: 43),
+        manualCode: "ABC7K9",
         expiresAt: Date(timeIntervalSince1970: 4_000_000_000)
     )
     let redeemedRelationshipID = "relationship-redeemed"
 
     private(set) var createCalls: [CreateCall] = []
     private(set) var revokeCalls: [String] = []
-    private(set) var redeemCalls: [String] = []
+    private(set) var redeemCalls: [PairingCredential] = []
     private(set) var createIdempotencyKeys: [String] = []
     private(set) var revokeIdempotencyKeys: [String] = []
     private(set) var redeemIdempotencyKeys: [String] = []
@@ -783,8 +784,11 @@ private final class FakeRelationshipRepository: RelationshipRepository {
         }
     }
 
-    func redeemInvitation(code: String, idempotencyKey: String) async throws -> String {
-        redeemCalls.append(code)
+    func redeemInvitation(
+        credential: PairingCredential,
+        idempotencyKey: String
+    ) async throws -> String {
+        redeemCalls.append(credential)
         redeemIdempotencyKeys.append(idempotencyKey)
         if redeemFailuresRemaining > 0 {
             redeemFailuresRemaining -= 1

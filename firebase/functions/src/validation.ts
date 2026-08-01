@@ -13,6 +13,20 @@ const messageIdSchema = z
   .max(128)
   .regex(/^[A-Za-z0-9_-]+$/u);
 const consentVersionSchema = z.literal(1);
+const linkTokenSchema = z
+  .string()
+  .regex(/^[a-f0-9]{40}\.[A-Za-z0-9_-]{43}$/u);
+
+export function normalizeManualPairingCode(value: string): string {
+  return value.replace(/[\s-]/gu, "").toUpperCase();
+}
+
+const manualPairingCodeSchema = z
+  .string()
+  .min(6)
+  .max(16)
+  .transform(normalizeManualPairingCode)
+  .pipe(z.string().regex(/^[2-9A-HJ-NP-Z]{6}$/u));
 
 export const createInvitationInputSchema = z
   .object({
@@ -35,14 +49,22 @@ export const revokeInvitationInputSchema = z
   })
   .strict();
 
-export const redeemInvitationInputSchema = z
-  .object({
-    invitationCode: z
-      .string()
-      .regex(/^[a-f0-9]{40}\.[A-Za-z0-9_-]{43}$/u),
-    idempotencyKey: idempotencyKeySchema
-  })
-  .strict();
+export const redeemInvitationInputSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("token"),
+      value: linkTokenSchema,
+      idempotencyKey: idempotencyKeySchema
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("code"),
+      value: manualPairingCodeSchema,
+      idempotencyKey: idempotencyKeySchema
+    })
+    .strict()
+]);
 
 const aiContextSchema = z.discriminatedUnion("category", [
   z
@@ -175,11 +197,11 @@ export function parseInput<T>(
   return result.data;
 }
 
-export function splitInvitationCode(code: string): {
+export function splitLinkToken(token: string): {
   invitationId: string;
   secret: string;
 } {
-  const separator = code.indexOf(".");
+  const separator = token.indexOf(".");
   if (separator <= 0) {
     throw new HttpsError(
       "invalid-argument",
@@ -188,7 +210,7 @@ export function splitInvitationCode(code: string): {
   }
 
   return {
-    invitationId: code.slice(0, separator),
-    secret: code.slice(separator + 1)
+    invitationId: token.slice(0, separator),
+    secret: token.slice(separator + 1)
   };
 }

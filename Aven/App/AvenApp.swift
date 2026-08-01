@@ -30,6 +30,7 @@ struct AvenApp: App {
                 .environment(relationshipStore)
                 .tint(PremiumArrivalStyle.pinkInk)
                 .task {
+                    AvenHaptics.shared.prepare()
                     await relationshipStore.restoreDeferredPairing()
                     await session.start()
                     if let user = session.user {
@@ -66,6 +67,20 @@ struct AvenApp: App {
                         locale: settings.language.locale
                     )
                 }
+                .onChange(of: session.profile?.userID) { _, profileUserID in
+                    guard
+                        let profileUserID,
+                        let user = session.user,
+                        user.id == profileUserID
+                    else {
+                        return
+                    }
+                    relationshipStore.prepare(
+                        for: user,
+                        profile: session.profile,
+                        locale: settings.language.locale
+                    )
+                }
                 .onReceive(
                     NotificationCenter.default.publisher(
                         for: UIApplication.protectedDataDidBecomeAvailableNotification
@@ -83,8 +98,24 @@ struct AvenApp: App {
                     }
                 }
                 .onOpenURL { url in
-                    GIDSignIn.sharedInstance.handle(url)
+                    handleIncomingURL(url)
+                }
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                    guard let url = activity.webpageURL else { return }
+                    handleIncomingURL(url)
                 }
         }
+    }
+
+    @MainActor
+    private func handleIncomingURL(_ url: URL) {
+        if let credential = PairingQRCodePayload.parse(url) {
+            Task {
+                await relationshipStore.restoreDeferredPairing()
+                relationshipStore.redeemInvitation(credential: credential)
+            }
+            return
+        }
+        _ = GIDSignIn.sharedInstance.handle(url)
     }
 }

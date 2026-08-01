@@ -181,6 +181,17 @@ final class OnboardingStore {
            currentIndex > relationshipDateIndex {
             step = .relationshipStartDate
         }
+
+        #if DEBUG && targetEnvironment(simulator)
+        if ProcessInfo.processInfo.arguments.contains("-ui-testing-guest-sign-in") {
+            step = .pairing
+            displayName = "Simulator Guest"
+            gender = .female
+            countryCode = "GB"
+            relationshipType = .dating
+            relationshipStartDate = .now
+        }
+        #endif
     }
 
     func goBack() {

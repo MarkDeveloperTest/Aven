@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 struct OnboardingFlowView: View {
     @Environment(AppSession.self) private var session
@@ -178,7 +177,8 @@ struct OnboardingFlowView: View {
                         title: gender.localizedResource,
                         isSelected: store.gender == gender
                     ) {
-                        Haptics.selection()
+                        guard store.gender != gender else { return }
+                        AvenHaptics.shared.selection()
                         store.gender = gender
                         store.validationError = nil
                     }
@@ -210,7 +210,8 @@ struct OnboardingFlowView: View {
                         title: type.localizedResource,
                         isSelected: store.relationshipType == type
                     ) {
-                        Haptics.selection()
+                        guard store.relationshipType != type else { return }
+                        AvenHaptics.shared.selection()
                         store.relationshipType = type
                     }
 
@@ -254,7 +255,8 @@ struct OnboardingFlowView: View {
                     title: "onboarding.notifications.enable",
                     isSelected: store.wantsNotifications
                 ) {
-                    Haptics.selection()
+                    guard store.wantsNotifications == false else { return }
+                    AvenHaptics.shared.selection()
                     store.wantsNotifications = true
                     Task { await NotificationAuthorizationClient.requestIfNeeded() }
                 }
@@ -265,7 +267,8 @@ struct OnboardingFlowView: View {
                     title: "onboarding.option.not_now",
                     isSelected: store.wantsNotifications == false
                 ) {
-                    Haptics.selection()
+                    guard store.wantsNotifications else { return }
+                    AvenHaptics.shared.selection()
                     store.wantsNotifications = false
                 }
             }
@@ -284,7 +287,8 @@ struct OnboardingFlowView: View {
                     title: "onboarding.notification_previews.show",
                     isSelected: settings.notificationPreviewsEnabled
                 ) {
-                    Haptics.selection()
+                    guard settings.notificationPreviewsEnabled == false else { return }
+                    AvenHaptics.shared.selection()
                     settings.notificationPreviewsEnabled = true
                 }
 
@@ -294,7 +298,8 @@ struct OnboardingFlowView: View {
                     title: "onboarding.notification_previews.private",
                     isSelected: settings.notificationPreviewsEnabled == false
                 ) {
-                    Haptics.selection()
+                    guard settings.notificationPreviewsEnabled else { return }
+                    AvenHaptics.shared.selection()
                     settings.notificationPreviewsEnabled = false
                 }
             }
@@ -313,7 +318,8 @@ struct OnboardingFlowView: View {
                     title: "onboarding.location.enable",
                     isSelected: store.wantsPreciseLocation
                 ) {
-                    Haptics.selection()
+                    guard store.wantsPreciseLocation == false else { return }
+                    AvenHaptics.shared.selection()
                     store.wantsPreciseLocation = true
                 }
 
@@ -323,7 +329,8 @@ struct OnboardingFlowView: View {
                     title: "onboarding.option.not_now",
                     isSelected: store.wantsPreciseLocation == false
                 ) {
-                    Haptics.selection()
+                    guard store.wantsPreciseLocation else { return }
+                    AvenHaptics.shared.selection()
                     store.wantsPreciseLocation = false
                 }
             }
@@ -342,7 +349,8 @@ struct OnboardingFlowView: View {
                     title: "onboarding.ai.enable",
                     isSelected: settings.aiEnabled
                 ) {
-                    Haptics.selection()
+                    guard settings.aiEnabled == false else { return }
+                    AvenHaptics.shared.selection()
                     settings.aiEnabled = true
                 }
 
@@ -352,7 +360,8 @@ struct OnboardingFlowView: View {
                     title: "onboarding.option.not_now",
                     isSelected: settings.aiEnabled == false
                 ) {
-                    Haptics.selection()
+                    guard settings.aiEnabled else { return }
+                    AvenHaptics.shared.selection()
                     settings.aiEnabled = false
                 }
             }
@@ -412,7 +421,8 @@ struct OnboardingFlowView: View {
         code: String
     ) -> some View {
         choiceRow(title: title, isSelected: store.countryCode == code) {
-            Haptics.selection()
+            guard store.countryCode != code else { return }
+            AvenHaptics.shared.selection()
             store.countryCode = code
             settings.language = AppLanguage.inferred(fromRegionCode: code)
         }
@@ -446,13 +456,20 @@ struct OnboardingFlowView: View {
                         Circle()
                             .fill(PremiumArrivalStyle.pinkInk)
                             .frame(width: 9, height: 9)
+                            .transition(.scale.combined(with: .opacity))
                     }
                 }
             }
+            .padding(.horizontal, 12)
             .frame(minHeight: 56)
+            .background(
+                isSelected ? PremiumArrivalStyle.blush.opacity(0.28) : .clear,
+                in: .rect(cornerRadius: AvenRadius.control, style: .continuous)
+            )
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PremiumPressableButtonStyle())
+        .animation(reduceMotion ? nil : .smooth(duration: 0.22), value: isSelected)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
@@ -474,7 +491,6 @@ struct OnboardingFlowView: View {
         Binding(
             get: { store.relationshipStartDate ?? .now },
             set: {
-                Haptics.selection()
                 store.relationshipStartDate = $0
             }
         )
@@ -520,7 +536,6 @@ struct OnboardingFlowView: View {
     private func goForward() {
         let previousStep = store.step
         transitionDirection = .forward
-        Haptics.light()
         withAnimation(reduceMotion ? nil : .smooth(duration: 0.42)) {
             store.goForward(pairingIsComplete: pairingIsComplete)
         }
@@ -528,7 +543,9 @@ struct OnboardingFlowView: View {
             Task { await LocationAuthorizationClient.requestAlwaysPreciseIfNeeded() }
         }
         if store.step == previousStep, store.validationError != nil {
-            Haptics.error()
+            AvenHaptics.shared.error()
+        } else if store.step != previousStep {
+            AvenHaptics.shared.light()
         }
     }
 
@@ -554,7 +571,7 @@ struct OnboardingFlowView: View {
     private func goBack() {
         guard store.canGoBack else { return }
         transitionDirection = .backward
-        Haptics.soft()
+        AvenHaptics.shared.soft()
         withAnimation(reduceMotion ? nil : .smooth(duration: 0.38)) {
             store.goBack()
         }
@@ -562,25 +579,25 @@ struct OnboardingFlowView: View {
 
     private func completeOnboarding() {
         guard let user = session.user else {
-            Haptics.error()
+            AvenHaptics.shared.error()
             session.present(.authentication(.invalidCredential))
             return
         }
 
         do {
             let profile = try store.makeProfile(userID: user.id)
-            Haptics.success()
             Task {
                 await session.completeOnboarding(with: profile)
                 if session.phase == .authenticated {
+                    AvenHaptics.shared.success()
                     store.resetProgress()
                 }
             }
         } catch let error as AppError {
-            Haptics.error()
+            AvenHaptics.shared.error()
             store.validationError = error
         } catch {
-            Haptics.error()
+            AvenHaptics.shared.error()
             store.validationError = .unknown
         }
     }
@@ -598,35 +615,4 @@ private extension RelationshipType {
 private enum StepTransitionDirection {
     case forward
     case backward
-}
-
-@MainActor
-private enum Haptics {
-    static func selection() {
-        UISelectionFeedbackGenerator().selectionChanged()
-    }
-
-    static func light() {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.prepare()
-        generator.impactOccurred(intensity: 0.72)
-    }
-
-    static func soft() {
-        let generator = UIImpactFeedbackGenerator(style: .soft)
-        generator.prepare()
-        generator.impactOccurred(intensity: 0.62)
-    }
-
-    static func error() {
-        let generator = UINotificationFeedbackGenerator()
-        generator.prepare()
-        generator.notificationOccurred(.error)
-    }
-
-    static func success() {
-        let generator = UINotificationFeedbackGenerator()
-        generator.prepare()
-        generator.notificationOccurred(.success)
-    }
 }

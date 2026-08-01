@@ -67,6 +67,24 @@ actor FirebaseAuthenticationRepository: AuthenticationRepository {
         }
     }
 
+    func signInAnonymously() async throws -> AuthenticatedUser {
+        do {
+            let result = try await auth.signInAnonymously()
+            return Self.mapUser(result.user)
+        } catch {
+            guard Self.isNetworkError(error) else {
+                throw Self.mapAuthenticationError(error)
+            }
+
+            do {
+                let result = try await auth.signInAnonymously()
+                return Self.mapUser(result.user)
+            } catch {
+                throw Self.mapAuthenticationError(error)
+            }
+        }
+    }
+
     func signOut() throws {
         do {
             try auth.signOut()
@@ -123,13 +141,42 @@ actor FirebaseAuthenticationRepository: AuthenticationRepository {
         return value
     }
 
-    private nonisolated static func mapAuthenticationError(
+    nonisolated static func mapAuthenticationError(
         _ error: any Error
     ) -> AppError {
         let error = error as NSError
-        if error.domain == NSURLErrorDomain {
+        if isNetworkError(error) {
             return .offline
         }
+
+        if error.domain == AuthErrorDomain {
+            switch AuthErrorCode(rawValue: error.code) {
+            case .operationNotAllowed, .invalidAPIKey, .appNotAuthorized:
+                return .authentication(.notConfigured)
+            case .tooManyRequests:
+                return .authentication(.providerUnavailable)
+            default:
+                break
+            }
+        }
+
         return .authentication(.invalidCredential)
+    }
+
+    private nonisolated static func isNetworkError(
+        _ error: any Error
+    ) -> Bool {
+        let error = error as NSError
+        if error.domain == NSURLErrorDomain {
+            return true
+        }
+        if error.domain == AuthErrorDomain,
+           error.code == AuthErrorCode.networkError.rawValue {
+            return true
+        }
+        guard let underlyingError = error.userInfo[NSUnderlyingErrorKey] as? NSError else {
+            return false
+        }
+        return underlyingError.domain == NSURLErrorDomain
     }
 }

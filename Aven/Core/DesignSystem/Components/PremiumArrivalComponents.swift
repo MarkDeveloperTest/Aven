@@ -64,14 +64,31 @@ struct PremiumPrimaryButton: View {
                 .opacity(isLoading ? 0.58 : 1)
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 56)
+                .foregroundStyle(.white)
+                .background(
+                    PremiumArrivalStyle.ink,
+                    in: .rect(cornerRadius: 10, style: .continuous)
+                )
+                .shadow(color: .black.opacity(0.10), radius: 10, y: 5)
         }
-        .foregroundStyle(.white)
-        .background(
-            PremiumArrivalStyle.ink,
-            in: .rect(cornerRadius: 10, style: .continuous)
-        )
-        .shadow(color: .black.opacity(0.10), radius: 10, y: 5)
         .disabled(isLoading)
+        .buttonStyle(PremiumPressableButtonStyle())
+    }
+}
+
+struct PremiumPressableButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(
+                reduceMotion || configuration.isPressed == false ? 1 : 0.985
+            )
+            .opacity(configuration.isPressed ? 0.92 : 1)
+            .animation(
+                reduceMotion ? nil : .smooth(duration: 0.16),
+                value: configuration.isPressed
+            )
     }
 }
 
@@ -140,6 +157,7 @@ struct PremiumArrivalScaffold<Content: View>: View {
                         .font(.body)
                         .foregroundStyle(PremiumArrivalStyle.ink)
                         .frame(minHeight: 44)
+                        .buttonStyle(PremiumPressableButtonStyle())
                         .accessibilityIdentifier("onboarding.back")
                 }
             }

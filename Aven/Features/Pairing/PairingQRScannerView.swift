@@ -11,22 +11,22 @@ struct PairingQRScannerView: View {
 
     private let environment: AppBuildEnvironment
     private let onScanned: (String) -> Void
+    private let onManualEntryRequested: () -> Void
 
     @State private var accessState = CameraAccessState.checking
     @State private var hasDeliveredCode = false
-    @State private var isManualEntryVisible = false
     @State private var isTorchAvailable = false
     @State private var isTorchOn = false
-    @State private var manualEntry = ""
-    @State private var showsManualEntryError = false
     @AccessibilityFocusState private var accessibilityFocus: AccessibilityFocus?
 
     init(
         environment: AppBuildEnvironment = .current,
-        onScanned: @escaping (String) -> Void
+        onScanned: @escaping (String) -> Void,
+        onManualEntryRequested: @escaping () -> Void = {}
     ) {
         self.environment = environment
         self.onScanned = onScanned
+        self.onManualEntryRequested = onManualEntryRequested
     }
 
     var body: some View {
@@ -72,7 +72,6 @@ struct PairingQRScannerView: View {
             }
         }
         .onDisappear {
-            manualEntry = ""
             isTorchOn = false
         }
     }
@@ -192,7 +191,12 @@ struct PairingQRScannerView: View {
                 .foregroundStyle(PremiumArrivalStyle.ink)
                 .accessibilityElement(children: .combine)
             } else {
-                manualEntryDisclosure
+                Button("pairing.scan.manual.action", action: requestManualEntry)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(PremiumArrivalStyle.ink)
+                    .frame(minHeight: 44)
+                    .buttonStyle(PremiumPressableButtonStyle())
+                    .accessibilityIdentifier("pairing.scan.manual.toggle")
             }
         }
         .padding(.horizontal, 24)
@@ -201,85 +205,6 @@ struct PairingQRScannerView: View {
         .background(
             reduceTransparency ? Color.white : Color.white.opacity(0.96)
         )
-    }
-
-    private var manualEntryDisclosure: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button {
-                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
-                    isManualEntryVisible.toggle()
-                    showsManualEntryError = false
-                }
-            } label: {
-                HStack {
-                    Text("pairing.scan.manual.action")
-                        .font(.subheadline.weight(.semibold))
-                    Spacer()
-                    Image(systemName: isManualEntryVisible ? "chevron.up" : "chevron.down")
-                        .font(.caption.weight(.bold))
-                }
-                .foregroundStyle(PremiumArrivalStyle.ink)
-                .frame(minHeight: 44)
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("pairing.scan.manual.toggle")
-
-            if isManualEntryVisible {
-                manualEntryForm
-                    .transition(.opacity)
-            }
-        }
-    }
-
-    private var manualEntryForm: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SecureField("pairing.scan.manual.placeholder", text: $manualEntry)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .textContentType(.oneTimeCode)
-                .submitLabel(.go)
-                .onSubmit(submitManualEntry)
-                .padding(.horizontal, 14)
-                .frame(minHeight: 50)
-                .background(
-                    PremiumArrivalStyle.blush.opacity(0.34),
-                    in: .rect(cornerRadius: AvenRadius.control, style: .continuous)
-                )
-                .overlay {
-                    RoundedRectangle(
-                        cornerRadius: AvenRadius.control,
-                        style: .continuous
-                    )
-                    .stroke(
-                        showsManualEntryError
-                            ? Color.red.opacity(0.72)
-                            : PremiumArrivalStyle.divider,
-                        lineWidth: 1
-                    )
-                }
-                .accessibilityIdentifier("pairing.scan.manual.field")
-
-            if showsManualEntryError {
-                Text("pairing.scan.manual.invalid")
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(.red)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityFocused($accessibilityFocus, equals: .manualError)
-            }
-
-            Button("pairing.scan.manual.connect", action: submitManualEntry)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: 50)
-                .background(
-                    PremiumArrivalStyle.ink,
-                    in: .rect(cornerRadius: AvenRadius.control, style: .continuous)
-                )
-                .disabled(manualEntry.isEmpty)
-                .opacity(manualEntry.isEmpty ? 0.55 : 1)
-                .accessibilityIdentifier("pairing.scan.manual.connect")
-        }
     }
 
     private func fallbackView(
@@ -336,14 +261,10 @@ struct PairingQRScannerView: View {
                         .accessibilityIdentifier("pairing.scan.open-settings")
                     }
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("pairing.scan.manual.title")
-                            .font(.headline)
-                            .foregroundStyle(PremiumArrivalStyle.ink)
-                        manualEntryForm
-                    }
-                    .padding(18)
-                    .avenGlassSurface()
+                    PremiumPrimaryButton(
+                        "pairing.scan.manual.action",
+                        action: requestManualEntry
+                    )
                 }
                 .padding(.horizontal, 26)
                 .padding(.top, 128)
@@ -422,25 +343,11 @@ struct PairingQRScannerView: View {
     }
 
     @MainActor
-    private func submitManualEntry() {
-        guard let invitationCode = PairingQRCodePayload.parseManualEntry(manualEntry) else {
-            showsManualEntryError = true
-            accessibilityFocus = .manualError
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
-            return
-        }
-
-        deliver(invitationCode)
-    }
-
-    @MainActor
     private func deliver(_ invitationCode: String) {
         guard hasDeliveredCode == false else { return }
         hasDeliveredCode = true
-        manualEntry = ""
         isTorchOn = false
-        showsManualEntryError = false
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        AvenHaptics.shared.medium()
         UIAccessibility.post(
             notification: .announcement,
             argument: String(localized: "pairing.scan.connecting")
@@ -451,8 +358,14 @@ struct PairingQRScannerView: View {
 
     @MainActor
     private func cancel() {
-        manualEntry = ""
         isTorchOn = false
+        AvenHaptics.shared.soft()
+        dismiss()
+    }
+
+    @MainActor
+    private func requestManualEntry() {
+        onManualEntryRequested()
         dismiss()
     }
 }
@@ -467,7 +380,6 @@ private enum CameraAccessState: Equatable {
 
 private enum AccessibilityFocus: Hashable {
     case heading
-    case manualError
 }
 
 private struct PairingScannerFrame: View {

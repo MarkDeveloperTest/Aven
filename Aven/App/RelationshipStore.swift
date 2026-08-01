@@ -22,7 +22,7 @@ final class RelationshipStore {
     private var pairingOwnerClaimTask: Task<Void, Never>?
     private var observedUserID: String?
     private var preparedProfile: UserProfile?
-    private var deferredInvitationCode: String?
+    private var deferredPairingCredential: PairingCredential?
     private var wantsInvitationCreation = false
     private var pairingIdempotencyKey: String?
     private var revocationInvitationID: String?
@@ -52,7 +52,7 @@ final class RelationshipStore {
 
     var isActive: Bool { relationship.status == .active }
     var deferredPairingState: DeferredPairingState {
-        if deferredInvitationCode != nil {
+        if deferredPairingCredential != nil {
             return .redeemInvitation
         }
         return wantsInvitationCreation ? .createInvitation : .none
@@ -70,19 +70,17 @@ final class RelationshipStore {
 
     func restoreDeferredPairing() async {
         guard didRestoreDeferredPairing == false else { return }
+        didRestoreDeferredPairing = true
 
         do {
             guard let state = try await pairingIntentPersistence.load() else {
-                didRestoreDeferredPairing = true
                 return
             }
             guard state.isValid() else {
-                didRestoreDeferredPairing = true
                 persistPairingState()
                 return
             }
 
-            didRestoreDeferredPairing = true
             persistedPairingOwnerUserID = state.ownerUserID
             if state.ownerUserID != nil {
                 // Keep account-owned bearer codes private until prepare(for:)
@@ -92,6 +90,7 @@ final class RelationshipStore {
                 applyRestoredPairingState(state)
             }
         } catch {
+            didRestoreDeferredPairing = false
             AppLogger.persistence.error("Secure pairing state restore failed")
         }
     }
@@ -140,6 +139,13 @@ final class RelationshipStore {
             relationship.startDate = profile?.relationshipStartDate
         }
 
+        #if DEBUG && targetEnvironment(simulator)
+        if user.id == AppSession.simulatorUserID {
+            activateDemoRelationship(currentUserID: user.id, locale: locale)
+            return
+        }
+        #endif
+
         guard ProcessInfo.processInfo.arguments.contains("-ui-testing-authenticated") else {
             startObservingRelationshipIfNeeded(for: user.id)
             processDeferredPairingIfPossible()
@@ -154,7 +160,7 @@ final class RelationshipStore {
     ) {
         guard relationship.status == .unpaired else { return }
         pairingError = nil
-        deferredInvitationCode = nil
+        deferredPairingCredential = nil
         wantsInvitationCreation = true
         pairingIdempotencyKey = Self.makeIdempotencyKey()
         revocationInvitationID = nil
@@ -203,15 +209,58 @@ final class RelationshipStore {
         }
     }
 
-    func redeemInvitation(code: String) {
+    func replaceInvitation(
+        relationshipType: RelationshipType = .unspecified,
+        relationshipStartDate: Date? = nil
+    ) {
+        guard let invitation else {
+            createInvitation(
+                relationshipType: relationshipType,
+                relationshipStartDate: relationshipStartDate
+            )
+            return
+        }
         pairingError = nil
-        guard PairingInvitation.isValidCode(code) else {
+        deferredPairingCredential = nil
+        wantsInvitationCreation = true
+        let createIdempotencyKey = Self.makeIdempotencyKey()
+        let revokeIdempotencyKey = Self.makeIdempotencyKey()
+        pairingIdempotencyKey = createIdempotencyKey
+        revocationInvitationID = invitation.id
+        revocationIdempotencyKey = revokeIdempotencyKey
+        persistPairingState()
+
+        performPairingOperation { [repository] in
+            try await repository.revokeInvitation(
+                id: invitation.id,
+                idempotencyKey: revokeIdempotencyKey
+            )
+            let replacement = try await repository.createInvitation(
+                relationshipType: relationshipType,
+                relationshipStartDate: relationshipStartDate,
+                idempotencyKey: createIdempotencyKey
+            )
+            return .invitation(replacement)
+        }
+    }
+
+    func redeemInvitation(credential: PairingCredential) {
+        pairingError = nil
+        guard relationship.status != .active else {
+            pairingError = .relationship(.alreadyActive)
+            return
+        }
+        guard credential.isValid else {
             pairingError = .validation(.inviteCode)
+            return
+        }
+        if deferredPairingCredential == credential {
+            processDeferredPairingIfPossible()
             return
         }
 
         wantsInvitationCreation = false
-        deferredInvitationCode = code
+        deferredPairingCredential = credential
         pairingIdempotencyKey = Self.makeIdempotencyKey()
         persistPairingState()
         processDeferredPairingIfPossible()
@@ -227,7 +276,7 @@ final class RelationshipStore {
         pairingOwnerClaimTask?.cancel()
         pairingOwnerClaimTask = nil
         requiresPairingOwnerClaimPersistence = false
-        deferredInvitationCode = nil
+        deferredPairingCredential = nil
         wantsInvitationCreation = false
         pairingIdempotencyKey = nil
         pairingError = nil
@@ -335,14 +384,14 @@ final class RelationshipStore {
 
         guard let preparedProfile else { return }
 
-        if let deferredInvitationCode {
+        if let deferredPairingCredential {
             let idempotencyKey = pairingIdempotencyKey
                 ?? Self.makeIdempotencyKey()
             pairingIdempotencyKey = idempotencyKey
             persistPairingState()
             performPairingOperation { [repository] in
                 let relationshipID = try await repository.redeemInvitation(
-                    code: deferredInvitationCode,
+                    credential: deferredPairingCredential,
                     idempotencyKey: idempotencyKey
                 )
                 return .redeemed(relationshipID: relationshipID)
@@ -403,9 +452,9 @@ final class RelationshipStore {
         switch result {
         case .invitation(let invitation):
             self.invitation = invitation
-            relationship.inviteCode = invitation.code
+            relationship.inviteCode = invitation.manualCode
             relationship.status = .invitationPending
-            deferredInvitationCode = nil
+            deferredPairingCredential = nil
             wantsInvitationCreation = false
             pairingIdempotencyKey = nil
             revocationInvitationID = nil
@@ -413,7 +462,7 @@ final class RelationshipStore {
             persistPairingState()
         case .redeemed(let relationshipID):
             invitation = nil
-            deferredInvitationCode = nil
+            deferredPairingCredential = nil
             wantsInvitationCreation = false
             pairingIdempotencyKey = nil
             revocationInvitationID = nil
@@ -452,7 +501,7 @@ final class RelationshipStore {
             case .relationship(let summary):
                 self.relationship = summary
                 self.invitation = nil
-                self.deferredInvitationCode = nil
+                self.deferredPairingCredential = nil
                 self.wantsInvitationCreation = false
                 self.pairingIdempotencyKey = nil
                 self.revocationInvitationID = nil
@@ -478,13 +527,13 @@ final class RelationshipStore {
     }
 
     private func discardDeferredInvitationIfDefinitive(_ error: AppError) {
-        guard deferredInvitationCode != nil else { return }
+        guard deferredPairingCredential != nil else { return }
         switch error {
         case .validation(.inviteCode),
              .relationship(.alreadyActive),
              .relationship(.inviteExpired),
              .relationship(.notAuthorized):
-            deferredInvitationCode = nil
+            deferredPairingCredential = nil
             pairingIdempotencyKey = nil
             persistPairingState()
         case .authentication,
@@ -525,7 +574,7 @@ final class RelationshipStore {
         sharedDayEvents.removeAll(keepingCapacity: false)
         if clearDeferredPairing {
             invitation = nil
-            deferredInvitationCode = nil
+            deferredPairingCredential = nil
             wantsInvitationCreation = false
             pairingIdempotencyKey = nil
             revocationInvitationID = nil
@@ -534,7 +583,7 @@ final class RelationshipStore {
             quarantinedPairingState = nil
             persistPairingState()
         } else if let invitation {
-            relationship.inviteCode = invitation.code
+            relationship.inviteCode = invitation.manualCode
             relationship.status = .invitationPending
         }
     }
@@ -595,12 +644,23 @@ final class RelationshipStore {
             wantsInvitationCreation = true
             pairingIdempotencyKey = state.idempotencyKey
         case .redeemInvitation:
-            deferredInvitationCode = state.invitationCode
+            guard
+                let credentialKind = state.credentialKind,
+                let credentialValue = state.credentialValue
+            else {
+                persistPairingState()
+                return
+            }
+            deferredPairingCredential = switch credentialKind {
+            case .token: .linkToken(credentialValue)
+            case .code: .manualCode(credentialValue)
+            }
             pairingIdempotencyKey = state.idempotencyKey
         case .invitation:
             guard
                 let invitationID = state.invitationID,
-                let invitationCode = state.invitationCode,
+                let linkToken = state.invitationLinkToken,
+                let manualCode = state.invitationManualCode,
                 let expiresAt = state.invitationExpiresAt
             else {
                 persistPairingState()
@@ -608,11 +668,12 @@ final class RelationshipStore {
             }
             let restoredInvitation = PairingInvitation(
                 id: invitationID,
-                code: invitationCode,
+                linkToken: linkToken,
+                manualCode: manualCode,
                 expiresAt: expiresAt
             )
             invitation = restoredInvitation
-            relationship.inviteCode = invitationCode
+            relationship.inviteCode = manualCode
             relationship.status = .invitationPending
             if let revocationIdempotencyKey = state.revocationIdempotencyKey {
                 revocationInvitationID = invitationID
@@ -634,12 +695,12 @@ final class RelationshipStore {
             )
         }
 
-        if let deferredInvitationCode,
+        if let deferredPairingCredential,
            let pairingIdempotencyKey {
             return .redeemInvitation(
                 ownerUserID: ownerUserID ?? persistedPairingOwnerUserID,
                 idempotencyKey: pairingIdempotencyKey,
-                invitationCode: deferredInvitationCode
+                credential: deferredPairingCredential
             )
         }
 

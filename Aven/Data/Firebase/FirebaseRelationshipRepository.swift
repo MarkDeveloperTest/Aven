@@ -49,8 +49,9 @@ final class FirebaseRelationshipRepository: RelationshipRepository {
         do {
             let response = try await callable.call(request)
             guard
-                PairingInvitation.isValidCode(response.invitationCode),
-                response.invitationCode.hasPrefix(response.invitationId + "."),
+                PairingInvitation.isValidLinkToken(response.linkToken),
+                response.linkToken.hasPrefix(response.invitationId + "."),
+                PairingInvitation.isValidManualCode(response.manualCode),
                 Self.isValidInvitationID(response.invitationId),
                 let expiresAt = Self.decodeDate(response.expiresAt)
             else {
@@ -58,7 +59,10 @@ final class FirebaseRelationshipRepository: RelationshipRepository {
             }
             return PairingInvitation(
                 id: response.invitationId,
-                code: response.invitationCode,
+                linkToken: response.linkToken,
+                manualCode: PairingInvitation.normalizeManualCode(
+                    response.manualCode
+                ),
                 expiresAt: expiresAt
             )
         } catch let error as AppError {
@@ -95,9 +99,12 @@ final class FirebaseRelationshipRepository: RelationshipRepository {
         }
     }
 
-    func redeemInvitation(code: String, idempotencyKey: String) async throws -> String {
+    func redeemInvitation(
+        credential: PairingCredential,
+        idempotencyKey: String
+    ) async throws -> String {
         guard
-            PairingInvitation.isValidCode(code),
+            credential.isValid,
             Self.isValidIdempotencyKey(idempotencyKey)
         else {
             throw AppError.validation(.inviteCode)
@@ -108,7 +115,8 @@ final class FirebaseRelationshipRepository: RelationshipRepository {
         do {
             let response = try await callable.call(
                 RedeemInvitationRequest(
-                    invitationCode: code,
+                    kind: credential.kind.rawValue,
+                    value: credential.value,
                     idempotencyKey: idempotencyKey
                 )
             )
@@ -394,7 +402,8 @@ private nonisolated struct CreateInvitationRequest: Encodable, Sendable {
 }
 
 private nonisolated struct CreateInvitationResponse: Decodable, Sendable {
-    let invitationCode: String
+    let linkToken: String
+    let manualCode: String
     let invitationId: String
     let expiresAt: String
     let reused: Bool
@@ -411,7 +420,8 @@ private nonisolated struct RevokeInvitationResponse: Decodable, Sendable {
 }
 
 private nonisolated struct RedeemInvitationRequest: Encodable, Sendable {
-    let invitationCode: String
+    let kind: String
+    let value: String
     let idempotencyKey: String
 }
 

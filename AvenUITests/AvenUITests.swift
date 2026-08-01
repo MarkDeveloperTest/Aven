@@ -14,6 +14,7 @@ final class AvenUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["auth.welcome.title"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["auth.apple"].exists)
         XCTAssertTrue(app.buttons["auth.google"].exists)
+        XCTAssertTrue(app.buttons["auth.guest"].exists)
         XCTAssertFalse(app.buttons["auth.demo"].exists)
         XCTAssertFalse(app.buttons["auth.language"].exists)
     }
@@ -38,6 +39,25 @@ final class AvenUITests: XCTestCase {
         app.buttons["messages.send"].tap()
 
         XCTAssertTrue(app.staticTexts["Hello from UI testing"].exists)
+    }
+
+    func testSimulatorGuestSignInContinuesWithoutFirebase() {
+        let app = XCUIApplication()
+        app.launchArguments += [
+            "-ui-testing-guest-sign-in",
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_GB"
+        ]
+        app.launch()
+
+        let guestButton = app.buttons["auth.guest"]
+        XCTAssertTrue(guestButton.waitForExistence(timeout: 5))
+        guestButton.tap()
+
+        XCTAssertTrue(
+            app.otherElements["pairing.connected"].waitForExistence(timeout: 5)
+        )
+        XCTAssertTrue(app.buttons["onboarding.continue"].exists)
     }
 
     func testPremiumOnboardingHidesProgressAndShowsFocusedNameStep() {
