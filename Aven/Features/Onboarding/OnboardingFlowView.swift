@@ -55,12 +55,14 @@ struct OnboardingFlowView: View {
             welcomeHapticTask?.cancel()
             welcomeHapticTask = nil
             AvenHaptics.shared.stopContinuousHeartFormation()
+            AvenHaptics.shared.stopStrongHeartPulses()
             AvenHaptics.shared.stopContinuousStandbyAnimation()
         }
         .onDisappear {
             welcomeTransitionTask?.cancel()
             welcomeHapticTask?.cancel()
             AvenHaptics.shared.stopContinuousHeartFormation()
+            AvenHaptics.shared.stopStrongHeartPulses()
             AvenHaptics.shared.stopContinuousStandbyAnimation()
         }
         .onChange(of: store.displayName) { _, displayName in
@@ -667,6 +669,9 @@ struct OnboardingFlowView: View {
                 return
             }
             AvenHaptics.shared.stopContinuousHeartFormation()
+            AvenHaptics.shared.playStrongHeartPulses(
+                duration: LineCubeMotion.heartHoldDuration
+            )
         }
     }
 

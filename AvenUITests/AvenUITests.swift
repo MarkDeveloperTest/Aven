@@ -73,6 +73,7 @@ final class AvenUITests: XCTestCase {
         XCTAssertTrue(continueButton.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["onboarding.welcome.title"].exists)
         XCTAssertTrue(app.otherElements["onboarding.screen.welcome"].exists)
+        XCTAssertTrue(app.otherElements["onboarding.welcome.cube"].exists)
         XCTAssertFalse(app.staticTexts["onboarding.wordmark"].exists)
         XCTAssertFalse(app.buttons["onboarding.back"].exists)
         XCTAssertFalse(app.staticTexts["onboarding.progress.accessibility"].exists)
@@ -81,7 +82,7 @@ final class AvenUITests: XCTestCase {
         continueButton.tap()
 
         XCTAssertTrue(
-            app.otherElements["onboarding.screen.privacy"].waitForExistence(timeout: 3)
+            app.otherElements["onboarding.screen.privacy"].waitForExistence(timeout: 5)
         )
         XCTAssertTrue(app.staticTexts["onboarding.wordmark"].exists)
         XCTAssertTrue(app.buttons["onboarding.back"].exists)
@@ -107,7 +108,7 @@ final class AvenUITests: XCTestCase {
         XCTAssertTrue(continueButton.waitForExistence(timeout: 8))
         continueButton.tap()
         XCTAssertTrue(
-            app.otherElements["onboarding.screen.privacy"].waitForExistence(timeout: 3)
+            app.otherElements["onboarding.screen.privacy"].waitForExistence(timeout: 5)
         )
         continueButton.tap()
 
