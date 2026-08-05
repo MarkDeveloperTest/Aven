@@ -5,6 +5,7 @@ import Observation
 @Observable
 final class OnboardingStore {
     nonisolated enum Step: String, CaseIterable, Sendable {
+        case welcome
         case privacy
         case displayName = "display-name"
         case birthDate = "birth-date"
@@ -103,7 +104,7 @@ final class OnboardingStore {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        step = .privacy
+        step = .welcome
         displayName = ""
         dateOfBirth = Calendar.current.date(byAdding: .year, value: -18, to: .now) ?? .now
         gender = nil
@@ -115,7 +116,7 @@ final class OnboardingStore {
     }
 
     var canGoBack: Bool {
-        step != .privacy
+        step != .welcome
     }
 
     static func hasSavedProgress(
@@ -197,8 +198,10 @@ final class OnboardingStore {
     func goBack() {
         validationError = nil
         switch step {
-        case .privacy:
+        case .welcome:
             return
+        case .privacy:
+            step = .welcome
         case .displayName:
             step = .privacy
         case .birthDate:
@@ -230,6 +233,8 @@ final class OnboardingStore {
         validationError = nil
 
         switch step {
+        case .welcome:
+            step = .privacy
         case .privacy:
             step = .displayName
         case .displayName:
@@ -342,6 +347,7 @@ final class OnboardingStore {
 
     private func restoredStep() -> Step {
         let stored = defaults.object(forKey: requiredStorageKey(for: Key.step))
+        guard let stored else { return .welcome }
         if let identifier = stored as? String, let step = Step(rawValue: identifier) {
             return step
         }

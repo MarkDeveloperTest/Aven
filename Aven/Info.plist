@@ -61,8 +61,6 @@
 	<string>Aven uses the camera only to scan your partner's private pairing QR code.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Use Face ID to protect private relationship content in Aven.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Aven uses location only for moments you explicitly choose to share.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Aven uses your location while you use the app and, when you explicitly enable ongoing sharing, in the background.</string>
 	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
@@ -70,6 +68,8 @@
 		<key>AvenPreciseLocation</key>
 		<string>Aven uses your precise location only for moments you explicitly choose to share.</string>
 	</dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Aven uses location only for moments you explicitly choose to share.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Aven uses the microphone when you choose to record a voice message or journal.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -85,6 +85,8 @@
 	<true/>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>UILaunchStoryboardName</key>
+	<string></string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

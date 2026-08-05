@@ -109,6 +109,7 @@ struct PremiumArrivalScaffold<Content: View>: View {
     let primaryTitle: LocalizedStringResource
     let showsPrimaryAction: Bool
     let showsBack: Bool
+    let showsWordmark: Bool
     let isLoading: Bool
     let primaryAction: () -> Void
     let backAction: () -> Void
@@ -118,6 +119,7 @@ struct PremiumArrivalScaffold<Content: View>: View {
         primaryTitle: LocalizedStringResource = "action.continue",
         showsPrimaryAction: Bool = true,
         showsBack: Bool,
+        showsWordmark: Bool = true,
         isLoading: Bool = false,
         primaryAction: @escaping () -> Void,
         backAction: @escaping () -> Void,
@@ -126,6 +128,7 @@ struct PremiumArrivalScaffold<Content: View>: View {
         self.primaryTitle = primaryTitle
         self.showsPrimaryAction = showsPrimaryAction
         self.showsBack = showsBack
+        self.showsWordmark = showsWordmark
         self.isLoading = isLoading
         self.primaryAction = primaryAction
         self.backAction = backAction
@@ -139,11 +142,17 @@ struct PremiumArrivalScaffold<Content: View>: View {
             GeometryReader { geometry in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
-                        PremiumArrivalWordmark()
-                            .padding(.top, 28)
+                        if showsWordmark {
+                            PremiumArrivalWordmark()
+                                .padding(.top, 28)
+                        }
 
                         Spacer(minLength: 24)
-                            .frame(height: geometry.size.height > 700 ? 116 : 52)
+                            .frame(
+                                height: contentTopSpacing(
+                                    availableHeight: geometry.size.height
+                                )
+                            )
 
                         content
 
@@ -189,6 +198,15 @@ struct PremiumArrivalScaffold<Content: View>: View {
             .background(Color.white.opacity(0.96))
         }
         .preferredColorScheme(.light)
+    }
+
+    private func contentTopSpacing(availableHeight: CGFloat) -> CGFloat {
+        if showsWordmark {
+            return availableHeight > 700 ? 116 : 52
+        }
+        // The welcome artwork is intentionally centered vertically; unlike the
+        // remaining steps it has no wordmark above it.
+        return availableHeight > 700 ? 260 : 112
     }
 }
 

@@ -5,6 +5,23 @@ import Testing
 @Suite("Onboarding")
 @MainActor
 struct OnboardingStoreTests {
+    @Test("Fresh onboarding starts at Welcome and then introduces privacy")
+    func startsAtWelcome() {
+        let defaults = isolatedDefaults()
+        let store = OnboardingStore(defaults: defaults)
+        store.attach(to: "user-a")
+
+        #expect(store.step == .welcome)
+        #expect(store.canGoBack == false)
+
+        store.goForward()
+        #expect(store.step == .privacy)
+        #expect(store.canGoBack)
+
+        store.goBack()
+        #expect(store.step == .welcome)
+    }
+
     @Test("Profile validation requires a meaningful name")
     func validatesDisplayName() {
         let defaults = isolatedDefaults()
@@ -182,7 +199,7 @@ struct OnboardingStoreTests {
         secondStore.attach(to: "user-b")
 
         #expect(secondStore.displayName.isEmpty)
-        #expect(secondStore.step == .privacy)
+        #expect(secondStore.step == .welcome)
     }
 
     @Test("Local onboarding draft survives sign-in until completion")
@@ -275,7 +292,7 @@ struct OnboardingStoreTests {
         restoredSecondStore.attach(to: "user-b")
 
         #expect(restoredFirstStore.displayName.isEmpty)
-        #expect(restoredFirstStore.step == .privacy)
+        #expect(restoredFirstStore.step == .welcome)
         #expect(restoredSecondStore.displayName == "Alex")
     }
 

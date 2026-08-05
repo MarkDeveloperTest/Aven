@@ -71,10 +71,20 @@ final class AvenUITests: XCTestCase {
 
         let continueButton = app.buttons["onboarding.continue"]
         XCTAssertTrue(continueButton.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["onboarding.wordmark"].exists)
+        XCTAssertTrue(app.staticTexts["onboarding.welcome.title"].exists)
+        XCTAssertTrue(app.otherElements["onboarding.screen.welcome"].exists)
+        XCTAssertFalse(app.staticTexts["onboarding.wordmark"].exists)
+        XCTAssertFalse(app.buttons["onboarding.back"].exists)
         XCTAssertFalse(app.staticTexts["onboarding.progress.accessibility"].exists)
         XCTAssertFalse(app.progressIndicators["onboarding.progress.accessibility"].exists)
 
+        continueButton.tap()
+
+        XCTAssertTrue(
+            app.otherElements["onboarding.screen.privacy"].waitForExistence(timeout: 3)
+        )
+        XCTAssertTrue(app.staticTexts["onboarding.wordmark"].exists)
+        XCTAssertTrue(app.buttons["onboarding.back"].exists)
         continueButton.tap()
 
         XCTAssertTrue(app.textFields["onboarding.name"].waitForExistence(timeout: 3))
@@ -95,6 +105,10 @@ final class AvenUITests: XCTestCase {
 
         let continueButton = app.buttons["onboarding.continue"]
         XCTAssertTrue(continueButton.waitForExistence(timeout: 8))
+        continueButton.tap()
+        XCTAssertTrue(
+            app.otherElements["onboarding.screen.privacy"].waitForExistence(timeout: 3)
+        )
         continueButton.tap()
 
         let nameField = app.textFields["onboarding.name"]

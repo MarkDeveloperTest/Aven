@@ -1091,6 +1091,23 @@
         }
       }
     },
+    "onboarding.welcome.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome to Aven"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ласкаво просимо до Aven"
+          }
+        }
+      }
+    },
     "onboarding.ai.enable" : {
       "extractionState" : "manual",
       "localizations" : {

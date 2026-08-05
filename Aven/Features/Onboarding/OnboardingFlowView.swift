@@ -8,6 +8,9 @@ struct OnboardingFlowView: View {
     @FocusState private var isNameFocused: Bool
     @State private var store = OnboardingStore()
     @State private var transitionDirection: StepTransitionDirection = .forward
+    @State private var welcomeHeartFormationStart: Date?
+    @State private var isWelcomeTransitioning = false
+    @State private var welcomeTransitionTask: Task<Void, Never>?
 
     var body: some View {
         PremiumArrivalScaffold(
@@ -16,9 +19,10 @@ struct OnboardingFlowView: View {
                 : "action.continue",
             showsPrimaryAction: showsPrimaryAction,
             showsBack: store.canGoBack,
+            showsWordmark: store.step != .welcome,
             isLoading: session.isWorking,
             primaryAction: {
-                store.step == .finish ? completeOnboarding() : goForward()
+                performPrimaryAction()
             },
             backAction: goBack
         ) {
@@ -42,9 +46,13 @@ struct OnboardingFlowView: View {
                 store.requirePairingBeforeFinish()
             }
         }
-        .onChange(of: store.step) { _, _ in
+        .onChange(of: store.step) { _, step in
             isNameFocused = false
+            guard step != .welcome else { return }
+            welcomeTransitionTask?.cancel()
+            welcomeTransitionTask = nil
         }
+        .onDisappear { welcomeTransitionTask?.cancel() }
         .onChange(of: store.displayName) { _, displayName in
             guard
                 store.validationError == .validation(.displayName),
@@ -61,6 +69,10 @@ struct OnboardingFlowView: View {
     @ViewBuilder
     private var currentScreen: some View {
         switch store.step {
+        case .welcome:
+            OnboardingWelcomeView(
+                heartFormationStart: welcomeHeartFormationStart
+            )
         case .privacy:
             privacyScreen
         case .displayName:
@@ -582,6 +594,45 @@ struct OnboardingFlowView: View {
                 ).combined(with: .opacity),
                 removal: .opacity
             )
+    }
+
+    private func performPrimaryAction() {
+        switch store.step {
+        case .welcome:
+            formHeartThenContinue()
+        case .finish:
+            completeOnboarding()
+        default:
+            goForward()
+        }
+    }
+
+    private func formHeartThenContinue() {
+        guard isWelcomeTransitioning == false else { return }
+        isWelcomeTransitioning = true
+        welcomeHeartFormationStart = .now
+
+        let transitionDelay = reduceMotion
+            ? 1
+            : LineCubeMotion.heartFormationDuration + 1
+        welcomeTransitionTask?.cancel()
+        welcomeTransitionTask = Task { @MainActor in
+            do {
+                try await Task.sleep(for: .seconds(transitionDelay))
+            } catch {
+                return
+            }
+
+            guard Task.isCancelled == false, store.step == .welcome else {
+                return
+            }
+
+            goForward()
+            withTransaction(Transaction(animation: nil)) {
+                welcomeHeartFormationStart = nil
+                isWelcomeTransitioning = false
+            }
+        }
     }
 
     private func goForward() {
