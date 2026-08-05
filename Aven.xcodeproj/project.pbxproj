@@ -12,6 +12,10 @@
 		2E6F10A4E4EEB6B26B1714341CC665BC /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 345E8A80610DF8860B285F2EFF7BC207 /* Foundation.framework */; };
 		48FA88C525F64F7AAB7C9A38 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 98DCEC3705CF46FE8477C5E8 /* GoogleSignIn */; };
 		4A4B3CCB15CFE84AC7815FFBD22DBAEA /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 345E8A80610DF8860B285F2EFF7BC207 /* Foundation.framework */; };
+		4D0E17273023867F006EE464 /* Aven.icon in Resources */ = {isa = PBXBuildFile; fileRef = 4D0E17263023867F006EE464 /* Aven.icon */; };
+		4D0E17283023867F006EE464 /* Aven.icon in Resources */ = {isa = PBXBuildFile; fileRef = 4D0E17263023867F006EE464 /* Aven.icon */; };
+		4D0E17293023867F006EE464 /* Aven.icon in Resources */ = {isa = PBXBuildFile; fileRef = 4D0E17263023867F006EE464 /* Aven.icon */; };
+		4D0E172A3023867F006EE464 /* Aven.icon in Resources */ = {isa = PBXBuildFile; fileRef = 4D0E17263023867F006EE464 /* Aven.icon */; };
 		578726BB1F8374553DF64B03CF7F9729 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 4B6B3E0E40FAF5FBEF942383189A36DE /* FirebaseMessaging */; };
 		5DC12BEA56AC01B6D2CDA26C655EC577 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = D3A7483C82250C352697746D2190F904 /* PrivacyInfo.xcprivacy */; };
 		62441CA32A0F271FD98C704304D2614F /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5344B6FC8EDF88BD8FBB537C729F949B /* FirebaseCore */; };
@@ -72,6 +76,7 @@
 		2EEED2C2155689C51E710CA3F2B2D639 /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Aven/Resources/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		2FC4CFDE1BF5D2568DFA520B3C93F8CE /* Common.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
 		345E8A80610DF8860B285F2EFF7BC207 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		4D0E17263023867F006EE464 /* Aven.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Aven.icon; sourceTree = "<group>"; };
 		5B0DEA42B8A1D478717216715C1BECD0 /* Development.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
 		636F2D5356FC204950098AD967B7D4E4 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		763836D55AF3FA2AEEC07EB2A3FBD732 /* AvenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AvenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -181,6 +186,7 @@
 				0C5E68C9434F7206CC163088CC0C06AC /* Frameworks */,
 				2EEED2C2155689C51E710CA3F2B2D639 /* GoogleService-Info.plist */,
 				D720A754F0D40BC016BF5180E340312F /* Products */,
+				4D0E17263023867F006EE464 /* Aven.icon */,
 			);
 			sourceTree = "<group>";
 		};
@@ -371,6 +377,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4D0E17293023867F006EE464 /* Aven.icon in Resources */,
 				5DC12BEA56AC01B6D2CDA26C655EC577 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -379,6 +386,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4D0E17283023867F006EE464 /* Aven.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -386,6 +394,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4D0E17273023867F006EE464 /* Aven.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -394,6 +403,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				016A2A1EC3ED47F8A4FADF151CAC660D /* GoogleService-Info.plist in Resources */,
+				4D0E172A3023867F006EE464 /* Aven.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -64,18 +64,36 @@ struct LineCubeMotionTests {
         #expect(abs(first - neighbor) > 0.1)
     }
 
-    @Test("Heart uses selected outline cells and horizontal background cells")
-    func heartUsesAFixedRotationMap() {
-        #expect(LineCubeMotion.gridSize == 15)
-        #expect(
-            abs(LineCubeMotion.heartRotationDegrees(row: 6, column: 11) - 90)
-                < 2
+    @Test("Heart uses a simple centered glyph and horizontal background cells")
+    func heartUsesASimpleFixedGridGlyph() {
+        #expect(LineCubeMotion.gridSize == 10)
+        #expect(LineCubeMotion.heartRotationDegrees(row: 3, column: 8) == 90)
+        #expect(LineCubeMotion.heartLine(row: 5, column: 3).prominence == 1)
+        #expect(LineCubeMotion.heartLine(row: 6, column: 4).prominence == 1)
+        #expect(LineCubeMotion.heartLine(row: 7, column: 4).prominence < 1)
+        #expect(LineCubeMotion.heartRotationDegrees(row: 5, column: 5) == 0)
+        #expect(LineCubeMotion.heartLine(row: 5, column: 5).prominence > 0)
+        #expect(LineCubeMotion.heartLine(row: 0, column: 0).prominence == 0)
+    }
+
+    @Test("Heart formation settles smoothly at both ends")
+    func heartFormationSettlesSmoothly() {
+        let start = LineCubeMotion.heartFormationProgress(elapsed: 0)
+        let halfway = LineCubeMotion.heartFormationProgress(
+            elapsed: LineCubeMotion.heartFormationDuration / 2
         )
-        #expect(LineCubeMotion.heartRotationDegrees(row: 7, column: 7) == 0)
+        let finish = LineCubeMotion.heartFormationProgress(
+            elapsed: LineCubeMotion.heartFormationDuration
+        )
+
+        #expect(start == 0)
+        #expect(abs(halfway - 0.5) < 0.000_001)
+        #expect(finish == 1)
     }
 
     @Test("Heart formation uses the shortest rotational route")
     func heartFormationUsesShortestRotation() {
+        #expect(LineCubeMotion.heartHoldDuration == 0.6)
         let halfway = LineCubeMotion.interpolatedRotationDegrees(
             from: 350,
             to: 10,

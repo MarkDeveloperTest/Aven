@@ -1,9 +1,10 @@
 import SwiftUI
 
 nonisolated enum LineCubeMotion {
-    static let gridSize = 15
+    static let gridSize = 10
     static let period: TimeInterval = 6
     static let heartFormationDuration: TimeInterval = 0.8
+    static let heartHoldDuration: TimeInterval = 0.6
 
     static func rotationDegrees(
         row: Int,
@@ -29,43 +30,40 @@ nonisolated enum LineCubeMotion {
     }
 
     static func heartRotationDegrees(row: Int, column: Int) -> Double {
-        let center = Double(gridSize - 1) / 2
-        let point = (x: Double(column), y: Double(row))
-        let segmentCount = 96
+        heartLine(row: row, column: column).rotation
+    }
 
-        var nearestDistance = Double.infinity
-        var nearestRotation = 0.0
-        for index in 0..<segmentCount {
-            let start = heartPoint(
-                at: Double(index) / Double(segmentCount) * .pi * 2,
-                center: center
-            )
-            let end = heartPoint(
-                at: Double(index + 1) / Double(segmentCount) * .pi * 2,
-                center: center
-            )
-            let horizontal = end.x - start.x
-            let vertical = end.y - start.y
-            let lengthSquared = (horizontal * horizontal) + (vertical * vertical)
-            let projection = min(
-                max(
-                    ((point.x - start.x) * horizontal + (point.y - start.y) * vertical)
-                        / lengthSquared,
-                    0
-                ),
-                1
-            )
-            let closestX = start.x + horizontal * projection
-            let closestY = start.y + vertical * projection
-            let distance = hypot(point.x - closestX, point.y - closestY)
+    static func heartFormationProgress(elapsed: TimeInterval) -> CGFloat {
+        let normalized = min(max(elapsed / heartFormationDuration, 0), 1)
+        // Quintic smootherstep settles with no visible acceleration at either end.
+        let eased = normalized * normalized * normalized
+            * (normalized * (normalized * 6 - 15) + 10)
+        return CGFloat(eased)
+    }
 
-            guard distance < nearestDistance else { continue }
-            nearestDistance = distance
-            nearestRotation = atan2(vertical, horizontal) * 180 / .pi
+    static func heartLine(
+        row: Int,
+        column: Int
+    ) -> (rotation: Double, prominence: Double) {
+        guard isHeartCell(row: row, column: column) else {
+            // These lines never leave their cells: a faint horizontal halo softens
+            // the outline while the rest stays as the quiet background grid.
+            return (rotation: 0, prominence: heartHaloProminence(row: row, column: column))
         }
 
-        // Lines outside the centered heart are the horizontal background grid.
-        return nearestDistance <= 0.52 ? nearestRotation : 0
+        // A deliberately simple, rounded heart outline for the 10 by 10 grid.
+        let rotation: Double
+        switch (row, column) {
+        case (2, 1), (2, 5), (4, 7), (5, 6), (6, 5):
+            rotation = 135
+        case (2, 4), (2, 8), (4, 2), (5, 3), (6, 4):
+            rotation = 45
+        case (3, 1), (3, 8):
+            rotation = 90
+        default:
+            rotation = 0
+        }
+        return (rotation: rotation, prominence: 1)
     }
 
     static func interpolatedRotationDegrees(
@@ -79,21 +77,34 @@ nonisolated enum LineCubeMotion {
         return start + shortestDelta * Double(progress)
     }
 
-    private static func heartPoint(
-        at parameter: Double,
-        center: Double
-    ) -> (x: Double, y: Double) {
-        let scale = 0.24
-        let horizontal = 16 * pow(sin(parameter), 3)
-        let vertical = 13 * cos(parameter)
-            - 5 * cos(2 * parameter)
-            - 2 * cos(3 * parameter)
-            - cos(4 * parameter)
+    private static func isHeartCell(row: Int, column: Int) -> Bool {
+        switch row {
+        case 1:
+            return (2...3).contains(column) || (6...7).contains(column)
+        case 2:
+            return [1, 4, 5, 8].contains(column)
+        case 3:
+            return [1, 8].contains(column)
+        case 4:
+            return [2, 7].contains(column)
+        case 5:
+            return [3, 6].contains(column)
+        case 6:
+            return (4...5).contains(column)
+        default:
+            return false
+        }
+    }
 
-        return (
-            x: center + horizontal * scale,
-            y: center - vertical * scale
-        )
+    private static func heartHaloProminence(row: Int, column: Int) -> Double {
+        for rowOffset in -1...1 {
+            for columnOffset in -1...1 where rowOffset != 0 || columnOffset != 0 {
+                if isHeartCell(row: row + rowOffset, column: column + columnOffset) {
+                    return 0.16
+                }
+            }
+        }
+        return 0
     }
 
     private static func phaseOffset(row: Int, column: Int) -> Double {
@@ -141,6 +152,34 @@ struct BreathingLineCube: View {
         .frame(maxWidth: .infinity)
         .accessibilityIdentifier("onboarding.welcome.cube")
         .accessibilityHidden(true)
+        .onAppear(perform: updateStandbyHaptics)
+        .onDisappear {
+            AvenHaptics.shared.stopContinuousStandbyAnimation()
+        }
+        .onChange(of: reduceMotion) { _, _ in
+            updateStandbyHaptics()
+        }
+        .onChange(of: scenePhase) { _, _ in
+            updateStandbyHaptics()
+        }
+        .onChange(of: heartFormationStart) { _, _ in
+            updateStandbyHaptics()
+        }
+    }
+
+    private func updateStandbyHaptics() {
+        guard
+            reduceMotion == false,
+            scenePhase == .active,
+            heartFormationStart == nil
+        else {
+            AvenHaptics.shared.stopContinuousStandbyAnimation()
+            return
+        }
+
+        AvenHaptics.shared.playContinuousStandbyAnimation(
+            period: LineCubeMotion.period
+        )
     }
 
     private func heartProgress(at date: Date) -> CGFloat {
@@ -148,8 +187,7 @@ struct BreathingLineCube: View {
         guard reduceMotion == false else { return 1 }
 
         let elapsed = date.timeIntervalSince(heartFormationStart ?? date)
-        let rawProgress = min(max(elapsed / LineCubeMotion.heartFormationDuration, 0), 1)
-        return 0.5 - (0.5 * cos(.pi * rawProgress))
+        return LineCubeMotion.heartFormationProgress(elapsed: elapsed)
     }
 
     private func drawLines(
@@ -160,8 +198,8 @@ struct BreathingLineCube: View {
     ) {
         let side = min(size.width, size.height)
         let cellSize = side / CGFloat(LineCubeMotion.gridSize)
-        let lineLength = cellSize * 0.54
-        let lineWidth = max(1.6, cellSize * 0.055)
+        let lineLength = cellSize * 0.60
+        let lineWidth = max(1.6, cellSize * 0.06)
         let origin = CGPoint(
             x: (size.width - side) / 2,
             y: (size.height - side) / 2
@@ -179,16 +217,18 @@ struct BreathingLineCube: View {
                     column: column,
                     elapsed: elapsed
                 )
+                let heartLine = formationProgress == 0
+                    ? (rotation: 0.0, prominence: 0.0)
+                    : LineCubeMotion.heartLine(row: row, column: column)
                 let rotation = formationProgress == 0
                     ? gridRotation
                     : LineCubeMotion.interpolatedRotationDegrees(
                         from: gridRotation,
-                        to: LineCubeMotion.heartRotationDegrees(
-                            row: row,
-                            column: column
-                        ),
+                        to: heartLine.rotation,
                         progress: formationProgress
                     )
+                let heartOpacity = 0.28 + 0.64 * heartLine.prominence
+                let opacity = 0.86 + (heartOpacity - 0.86) * formationProgress
 
                 var lineContext = context
                 lineContext.translateBy(x: gridCenter.x, y: gridCenter.y)
@@ -199,7 +239,7 @@ struct BreathingLineCube: View {
                 line.addLine(to: CGPoint(x: lineLength / 2, y: 0))
                 lineContext.stroke(
                     line,
-                    with: .color(PremiumArrivalStyle.ink.opacity(0.86)),
+                    with: .color(PremiumArrivalStyle.ink.opacity(opacity)),
                     style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
             }
@@ -213,7 +253,7 @@ struct OnboardingWelcomeView: View {
     let heartFormationStart: Date?
 
     var body: some View {
-        VStack(spacing: 56) {
+        VStack(spacing: 82) {
             BreathingLineCube(heartFormationStart: heartFormationStart)
 
             Text("onboarding.welcome.title")

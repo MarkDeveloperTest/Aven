@@ -11,6 +11,7 @@ struct OnboardingFlowView: View {
     @State private var welcomeHeartFormationStart: Date?
     @State private var isWelcomeTransitioning = false
     @State private var welcomeTransitionTask: Task<Void, Never>?
+    @State private var welcomeHapticTask: Task<Void, Never>?
 
     var body: some View {
         PremiumArrivalScaffold(
@@ -51,8 +52,17 @@ struct OnboardingFlowView: View {
             guard step != .welcome else { return }
             welcomeTransitionTask?.cancel()
             welcomeTransitionTask = nil
+            welcomeHapticTask?.cancel()
+            welcomeHapticTask = nil
+            AvenHaptics.shared.stopContinuousHeartFormation()
+            AvenHaptics.shared.stopContinuousStandbyAnimation()
         }
-        .onDisappear { welcomeTransitionTask?.cancel() }
+        .onDisappear {
+            welcomeTransitionTask?.cancel()
+            welcomeHapticTask?.cancel()
+            AvenHaptics.shared.stopContinuousHeartFormation()
+            AvenHaptics.shared.stopContinuousStandbyAnimation()
+        }
         .onChange(of: store.displayName) { _, displayName in
             guard
                 store.validationError == .validation(.displayName),
@@ -611,10 +621,11 @@ struct OnboardingFlowView: View {
         guard isWelcomeTransitioning == false else { return }
         isWelcomeTransitioning = true
         welcomeHeartFormationStart = .now
+        startWelcomeHeartHaptics()
 
         let transitionDelay = reduceMotion
-            ? 1
-            : LineCubeMotion.heartFormationDuration + 1
+            ? LineCubeMotion.heartHoldDuration
+            : LineCubeMotion.heartFormationDuration + LineCubeMotion.heartHoldDuration
         welcomeTransitionTask?.cancel()
         welcomeTransitionTask = Task { @MainActor in
             do {
@@ -632,6 +643,30 @@ struct OnboardingFlowView: View {
                 welcomeHeartFormationStart = nil
                 isWelcomeTransitioning = false
             }
+        }
+    }
+
+    private func startWelcomeHeartHaptics() {
+        guard reduceMotion == false else { return }
+
+        AvenHaptics.shared.stopContinuousStandbyAnimation()
+        AvenHaptics.shared.playContinuousHeartFormation(
+            duration: LineCubeMotion.heartFormationDuration
+        )
+        welcomeHapticTask?.cancel()
+        welcomeHapticTask = Task { @MainActor in
+            do {
+                try await Task.sleep(
+                    for: .seconds(LineCubeMotion.heartFormationDuration)
+                )
+            } catch {
+                return
+            }
+
+            guard Task.isCancelled == false, store.step == .welcome else {
+                return
+            }
+            AvenHaptics.shared.stopContinuousHeartFormation()
         }
     }
 
