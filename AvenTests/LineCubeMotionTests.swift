@@ -66,10 +66,22 @@ struct LineCubeMotionTests {
 
     @Test("Heart uses selected outline cells and horizontal background cells")
     func heartUsesAFixedRotationMap() {
-        #expect(LineCubeMotion.gridSize == 11)
-        #expect(LineCubeMotion.heartRotationDegrees(row: 1, column: 1) == 135)
-        #expect(LineCubeMotion.heartRotationDegrees(row: 2, column: 5) == 90)
-        #expect(LineCubeMotion.heartRotationDegrees(row: 4, column: 1) == 45)
-        #expect(LineCubeMotion.heartRotationDegrees(row: 5, column: 5) == 0)
+        #expect(LineCubeMotion.gridSize == 15)
+        #expect(
+            abs(LineCubeMotion.heartRotationDegrees(row: 6, column: 11) - 90)
+                < 2
+        )
+        #expect(LineCubeMotion.heartRotationDegrees(row: 7, column: 7) == 0)
+    }
+
+    @Test("Heart formation uses the shortest rotational route")
+    func heartFormationUsesShortestRotation() {
+        let halfway = LineCubeMotion.interpolatedRotationDegrees(
+            from: 350,
+            to: 10,
+            progress: 0.5
+        )
+
+        #expect(abs(halfway - 360) < 0.001)
     }
 }

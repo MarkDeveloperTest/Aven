@@ -1,7 +1,7 @@
 import SwiftUI
 
 nonisolated enum LineCubeMotion {
-    static let gridSize = 11
+    static let gridSize = 15
     static let period: TimeInterval = 6
     static let heartFormationDuration: TimeInterval = 0.8
 
@@ -29,18 +29,71 @@ nonisolated enum LineCubeMotion {
     }
 
     static func heartRotationDegrees(row: Int, column: Int) -> Double {
-        // The heart is composed from fixed grid cells. Every unspecified cell
-        // deliberately settles horizontal to keep the heart outline legible.
-        switch (row, column) {
-        case (1, 1), (1, 6), (4, 9), (5, 8), (6, 7), (7, 6):
-            return 135
-        case (1, 4), (1, 9), (4, 1), (5, 2), (6, 3), (7, 4):
-            return 45
-        case (2, 0), (2, 5), (2, 10), (3, 0), (3, 10), (8, 5):
-            return 90
-        default:
-            return 0
+        let center = Double(gridSize - 1) / 2
+        let point = (x: Double(column), y: Double(row))
+        let segmentCount = 96
+
+        var nearestDistance = Double.infinity
+        var nearestRotation = 0.0
+        for index in 0..<segmentCount {
+            let start = heartPoint(
+                at: Double(index) / Double(segmentCount) * .pi * 2,
+                center: center
+            )
+            let end = heartPoint(
+                at: Double(index + 1) / Double(segmentCount) * .pi * 2,
+                center: center
+            )
+            let horizontal = end.x - start.x
+            let vertical = end.y - start.y
+            let lengthSquared = (horizontal * horizontal) + (vertical * vertical)
+            let projection = min(
+                max(
+                    ((point.x - start.x) * horizontal + (point.y - start.y) * vertical)
+                        / lengthSquared,
+                    0
+                ),
+                1
+            )
+            let closestX = start.x + horizontal * projection
+            let closestY = start.y + vertical * projection
+            let distance = hypot(point.x - closestX, point.y - closestY)
+
+            guard distance < nearestDistance else { continue }
+            nearestDistance = distance
+            nearestRotation = atan2(vertical, horizontal) * 180 / .pi
         }
+
+        // Lines outside the centered heart are the horizontal background grid.
+        return nearestDistance <= 0.52 ? nearestRotation : 0
+    }
+
+    static func interpolatedRotationDegrees(
+        from start: Double,
+        to end: Double,
+        progress: CGFloat
+    ) -> Double {
+        let normalizedStart = start.truncatingRemainder(dividingBy: 360)
+        let shortestDelta = (end - normalizedStart + 540)
+            .truncatingRemainder(dividingBy: 360) - 180
+        return start + shortestDelta * Double(progress)
+    }
+
+    private static func heartPoint(
+        at parameter: Double,
+        center: Double
+    ) -> (x: Double, y: Double) {
+        let scale = 0.24
+        let horizontal = 16 * pow(sin(parameter), 3)
+        let vertical = 13 * cos(parameter)
+            - 5 * cos(2 * parameter)
+            - 2 * cos(3 * parameter)
+            - cos(4 * parameter)
+
+        return (
+            x: center + horizontal * scale,
+            y: center - vertical * scale
+        )
     }
 
     private static func phaseOffset(row: Int, column: Int) -> Double {
@@ -126,12 +179,16 @@ struct BreathingLineCube: View {
                     column: column,
                     elapsed: elapsed
                 )
-                let rotation = gridRotation + (
-                    LineCubeMotion.heartRotationDegrees(
-                        row: row,
-                        column: column
-                    ) - gridRotation
-                ) * formationProgress
+                let rotation = formationProgress == 0
+                    ? gridRotation
+                    : LineCubeMotion.interpolatedRotationDegrees(
+                        from: gridRotation,
+                        to: LineCubeMotion.heartRotationDegrees(
+                            row: row,
+                            column: column
+                        ),
+                        progress: formationProgress
+                    )
 
                 var lineContext = context
                 lineContext.translateBy(x: gridCenter.x, y: gridCenter.y)
