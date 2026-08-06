@@ -19,27 +19,28 @@ nonisolated enum LineCubeMotion {
     }
 
     static let gridSize = 10
+    static let gridRowCount = 11
     static let period: TimeInterval = 6
     static let idleLoopDuration: TimeInterval = period * 3
     static let heartFormationDuration: TimeInterval = 0.8
-    static let heartHoldDuration: TimeInterval = 3
+    static let heartHoldDuration: TimeInterval = 1
     private static let heartTargets: [HeartCell: Double] = [
-        // Rounded upper lobes.
-        HeartCell(row: 1, column: 2): 0,
-        HeartCell(row: 1, column: 3): 0,
-        HeartCell(row: 1, column: 6): 0,
-        HeartCell(row: 1, column: 7): 0,
-        HeartCell(row: 2, column: 1): 135,
-        HeartCell(row: 2, column: 4): 45,
-        HeartCell(row: 2, column: 5): 135,
-        HeartCell(row: 2, column: 8): 45,
-        HeartCell(row: 3, column: 1): 90,
-        HeartCell(row: 3, column: 8): 90,
+        // Compact upper lobes, inner notch, and a clean taper matching the
+        // welcome-screen reference. The unused grid remains horizontal.
+        HeartCell(row: 2, column: 2): 0,
+        HeartCell(row: 2, column: 3): 0,
+        HeartCell(row: 2, column: 6): 0,
+        HeartCell(row: 2, column: 7): 0,
+        HeartCell(row: 3, column: 1): 135,
+        HeartCell(row: 3, column: 4): 45,
+        HeartCell(row: 3, column: 5): 135,
+        HeartCell(row: 3, column: 8): 45,
         HeartCell(row: 4, column: 1): 90,
         HeartCell(row: 4, column: 8): 90,
-        // The two sides sweep inward in a single straight run to the point.
+        // The marked bridge row starts the lower taper without a visual gap.
         HeartCell(row: 5, column: 1): 45,
         HeartCell(row: 5, column: 8): 135,
+        // The sides sweep inward in one even diagonal run to a soft point.
         HeartCell(row: 6, column: 2): 45,
         HeartCell(row: 6, column: 7): 135,
         HeartCell(row: 7, column: 3): 45,
@@ -103,14 +104,13 @@ nonisolated enum LineCubeMotion {
         CGFloat(smoothProgress(elapsed / heartFormationDuration))
     }
 
-    static func heartPulse(
-        elapsed: TimeInterval?,
-        reduceMotion: Bool
-    ) -> HeartPulse {
-        guard let elapsed, reduceMotion == false else { return .idle }
-        return HeartPulse(
-            emphasis: doubleHeartbeat(elapsed - heartFormationDuration)
-        )
+    static func heartTintProgress(formationProgress: CGFloat) -> Double {
+        Double(min(max(formationProgress, 0), 1))
+    }
+
+    static func heartGlow(elapsed: TimeInterval?) -> HeartPulse {
+        guard let elapsed, elapsed >= heartFormationDuration else { return .idle }
+        return HeartPulse(emphasis: 0.45)
     }
 
     static func heartLine(
@@ -121,15 +121,17 @@ nonisolated enum LineCubeMotion {
         return (rotation: target ?? 0, prominence: target == nil ? 0 : 1)
     }
 
-    static func interpolatedRotationDegrees(
+    static func forwardInterpolatedRotationDegrees(
         from start: Double,
         to end: Double,
         progress: CGFloat
     ) -> Double {
         let normalizedStart = start.truncatingRemainder(dividingBy: 360)
-        let shortestDelta = (end - normalizedStart + 540)
-            .truncatingRemainder(dividingBy: 360) - 180
-        return start + shortestDelta * Double(progress)
+        let normalizedEnd = end.truncatingRemainder(dividingBy: 360)
+        let forwardDelta = (normalizedEnd - normalizedStart + 360)
+            .truncatingRemainder(dividingBy: 360)
+        let travel = forwardDelta == 0 ? 360 : forwardDelta
+        return start + travel * Double(progress)
     }
 
     private static func phaseOffset(
@@ -137,13 +139,17 @@ nonisolated enum LineCubeMotion {
         row: Int,
         column: Int
     ) -> Double {
-        let center = Double(gridSize - 1) / 2
-        let rowDistance = Double(row) - center
-        let columnDistance = Double(column) - center
-        let maximumDistance = hypot(center, center)
+        let rowCenter = Double(gridRowCount - 1) / 2
+        let columnCenter = Double(gridSize - 1) / 2
+        let rowDistance = Double(row) - rowCenter
+        let columnDistance = Double(column) - columnCenter
+        let maximumDistance = hypot(rowCenter, columnCenter)
         let radius = hypot(rowDistance, columnDistance) / maximumDistance
         let angle = (atan2(rowDistance, columnDistance) + .pi) / (2 * .pi)
-        let diagonal = Double(row + column) / Double(2 * (gridSize - 1))
+        let diagonal = (
+            Double(row) / Double(gridRowCount - 1)
+                + Double(column) / Double(gridSize - 1)
+        ) / 2
         let individualOffset = individualOffset(row: row, column: column)
 
         switch motion {
@@ -169,24 +175,6 @@ nonisolated enum LineCubeMotion {
             * (normalized * (normalized * 6 - 15) + 10)
     }
 
-    private static func doubleHeartbeat(_ elapsed: TimeInterval) -> Double {
-        guard elapsed >= 0 else { return 0 }
-
-        let phase = (elapsed / 0.92).truncatingRemainder(dividingBy: 1)
-        let primary = pulse(phase, start: 0.10, duration: 0.20)
-        let secondary = pulse(phase, start: 0.37, duration: 0.13) * 0.68
-        return max(primary, secondary)
-    }
-
-    private static func pulse(
-        _ phase: Double,
-        start: Double,
-        duration: Double
-    ) -> Double {
-        let progress = (phase - start) / duration
-        guard (0...1).contains(progress) else { return 0 }
-        return sin(.pi * progress)
-    }
 }
 
 struct BreathingLineCube: View {
@@ -211,10 +199,7 @@ struct BreathingLineCube: View {
                         ? 0
                         : timeline.date.timeIntervalSince(animationStart),
                     heartProgress: heartProgress(elapsed: heartElapsed),
-                    heartPulse: LineCubeMotion.heartPulse(
-                        elapsed: heartElapsed,
-                        reduceMotion: reduceMotion
-                    )
+                    heartGlow: LineCubeMotion.heartGlow(elapsed: heartElapsed)
                 )
             }
         }
@@ -269,19 +254,21 @@ struct BreathingLineCube: View {
         size: CGSize,
         elapsed: TimeInterval,
         heartProgress: CGFloat,
-        heartPulse: LineCubeMotion.HeartPulse
+        heartGlow: LineCubeMotion.HeartPulse
     ) {
         let side = min(size.width, size.height)
-        let cellSize = side / CGFloat(LineCubeMotion.gridSize)
+        let cellSize = side / CGFloat(LineCubeMotion.gridRowCount)
+        let gridWidth = cellSize * CGFloat(LineCubeMotion.gridSize)
+        let gridHeight = cellSize * CGFloat(LineCubeMotion.gridRowCount)
         let lineLength = cellSize * 0.60
         let lineWidth = max(1.6, cellSize * 0.06)
         let origin = CGPoint(
-            x: (size.width - side) / 2,
-            y: (size.height - side) / 2
+            x: (size.width - gridWidth) / 2,
+            y: (size.height - gridHeight) / 2
         )
         let formationProgress = min(max(heartProgress, 0), 1)
 
-        for row in 0..<LineCubeMotion.gridSize {
+        for row in 0..<LineCubeMotion.gridRowCount {
             for column in 0..<LineCubeMotion.gridSize {
                 let gridCenter = CGPoint(
                     x: origin.x + (CGFloat(column) + 0.5) * cellSize,
@@ -297,17 +284,23 @@ struct BreathingLineCube: View {
                     : LineCubeMotion.heartLine(row: row, column: column)
                 let rotation = formationProgress == 0
                     ? gridRotation
-                    : LineCubeMotion.interpolatedRotationDegrees(
+                    : LineCubeMotion.forwardInterpolatedRotationDegrees(
                         from: gridRotation,
                         to: heartLine.rotation,
                         progress: formationProgress
                     )
                 let finalOpacity = heartLine.prominence == 1
-                    ? 0.94 + heartPulse.emphasis * 0.06
+                    ? 0.78 + heartGlow.emphasis * 0.22
                     : 0.12
                 let opacity = 0.86 + (finalOpacity - 0.86) * formationProgress
+                let heartTint = heartLine.prominence
+                    * LineCubeMotion.heartTintProgress(
+                        formationProgress: formationProgress
+                    )
+                let inkOpacity = opacity * (1 - heartTint)
+                let pinkOpacity = heartTint * (0.78 + heartGlow.emphasis * 0.22)
                 let heartStrokeEmphasis = heartLine.prominence * Double(formationProgress)
-                    * (0.20 + heartPulse.emphasis * 0.22)
+                    * (0.34 + heartGlow.emphasis * 0.58)
 
                 var lineContext = context
                 lineContext.translateBy(x: gridCenter.x, y: gridCenter.y)
@@ -316,14 +309,24 @@ struct BreathingLineCube: View {
                 var line = Path()
                 line.move(to: CGPoint(x: -lineLength / 2, y: 0))
                 line.addLine(to: CGPoint(x: lineLength / 2, y: 0))
-                lineContext.stroke(
-                    line,
-                    with: .color(PremiumArrivalStyle.ink.opacity(opacity)),
-                    style: StrokeStyle(
-                        lineWidth: lineWidth * (1 + CGFloat(heartStrokeEmphasis)),
-                        lineCap: .round
-                    )
+                let strokeStyle = StrokeStyle(
+                    lineWidth: lineWidth * (1 + CGFloat(heartStrokeEmphasis)),
+                    lineCap: .round
                 )
+                if inkOpacity > 0 {
+                    lineContext.stroke(
+                        line,
+                        with: .color(PremiumArrivalStyle.ink.opacity(inkOpacity)),
+                        style: strokeStyle
+                    )
+                }
+                if pinkOpacity > 0 {
+                    lineContext.stroke(
+                        line,
+                        with: .color(PremiumArrivalStyle.pinkInk.opacity(pinkOpacity)),
+                        style: strokeStyle
+                    )
+                }
             }
         }
     }

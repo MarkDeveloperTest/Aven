@@ -6,7 +6,7 @@ import Testing
 struct LineCubeMotionTests {
     @Test("Every line rotation repeats after the full idle loop")
     func repeatsAfterFullIdleLoop() {
-        for row in 0..<LineCubeMotion.gridSize {
+        for row in 0..<LineCubeMotion.gridRowCount {
             for column in 0..<LineCubeMotion.gridSize {
                 let first = LineCubeMotion.rotationDegrees(
                     row: row,
@@ -63,22 +63,25 @@ struct LineCubeMotionTests {
         #expect(abs(first - neighbor) > 0.1)
     }
 
-    @Test("Heart uses a centered symmetric glyph and horizontal background cells")
-    func heartUsesACenteredSymmetricFixedGridGlyph() {
+    @Test("Heart uses the compact reference glyph and horizontal background cells")
+    func heartUsesACompactSymmetricFixedGridGlyph() {
         #expect(LineCubeMotion.gridSize == 10)
-        #expect(LineCubeMotion.heartRotationDegrees(row: 3, column: 8) == 90)
-        #expect(LineCubeMotion.heartLine(row: 3, column: 1).prominence == 1)
+        #expect(LineCubeMotion.gridRowCount == 11)
+        #expect(LineCubeMotion.heartRotationDegrees(row: 4, column: 8) == 90)
+        #expect(LineCubeMotion.heartLine(row: 4, column: 1).prominence == 1)
+        #expect(LineCubeMotion.heartRotationDegrees(row: 5, column: 1) == 45)
+        #expect(LineCubeMotion.heartRotationDegrees(row: 5, column: 8) == 135)
         #expect(LineCubeMotion.heartLine(row: 7, column: 3).prominence == 1)
         #expect(LineCubeMotion.heartLine(row: 8, column: 4).prominence == 1)
         #expect(LineCubeMotion.heartLine(row: 9, column: 4).prominence == 0)
-        #expect(LineCubeMotion.heartRotationDegrees(row: 5, column: 5) == 0)
-        #expect(LineCubeMotion.heartLine(row: 5, column: 5).prominence == 0)
+        #expect(LineCubeMotion.heartRotationDegrees(row: 6, column: 5) == 0)
+        #expect(LineCubeMotion.heartLine(row: 6, column: 5).prominence == 0)
         #expect(LineCubeMotion.heartLine(row: 0, column: 0).prominence == 0)
     }
 
     @Test("Heart target mirrors across the center axis")
     func heartTargetIsSymmetric() {
-        for row in 0..<LineCubeMotion.gridSize {
+        for row in 0..<LineCubeMotion.gridRowCount {
             for column in 0..<(LineCubeMotion.gridSize / 2) {
                 let leading = LineCubeMotion.heartLine(row: row, column: column)
                 let trailing = LineCubeMotion.heartLine(
@@ -92,19 +95,19 @@ struct LineCubeMotionTests {
         }
     }
 
-    @Test("Heart is vertically centered and taller than the original compact mark")
-    func heartIsTallAndCentered() {
-        let heartRows = (0..<LineCubeMotion.gridSize).filter { row in
+    @Test("Heart occupies the compact centered reference bounds")
+    func heartUsesCompactReferenceBounds() {
+        let heartRows = (0..<LineCubeMotion.gridRowCount).filter { row in
             (0..<LineCubeMotion.gridSize).contains { column in
                 LineCubeMotion.heartLine(row: row, column: column).prominence == 1
             }
         }
 
-        #expect(heartRows.first == 1)
+        #expect(heartRows.first == 2)
         #expect(heartRows.last == 8)
 
         let heartColumns = (0..<LineCubeMotion.gridSize).filter { column in
-            (0..<LineCubeMotion.gridSize).contains { row in
+            (0..<LineCubeMotion.gridRowCount).contains { row in
                 LineCubeMotion.heartLine(row: row, column: column).prominence == 1
             }
         }
@@ -127,51 +130,54 @@ struct LineCubeMotionTests {
         #expect(finish == 1)
     }
 
-    @Test("Heart formation uses the shortest rotational route")
-    func heartFormationUsesShortestRotation() {
-        #expect(LineCubeMotion.heartHoldDuration == 3)
-        let halfway = LineCubeMotion.interpolatedRotationDegrees(
+    @Test("Heart tint follows the smooth formation progress")
+    func heartTintFollowsFormationProgress() {
+        #expect(LineCubeMotion.heartTintProgress(formationProgress: -0.2) == 0)
+        #expect(LineCubeMotion.heartTintProgress(formationProgress: 0.5) == 0.5)
+        #expect(LineCubeMotion.heartTintProgress(formationProgress: 1.2) == 1)
+    }
+
+    @Test("Heart formation rotates every line forward")
+    func heartFormationUsesForwardRotation() {
+        #expect(LineCubeMotion.heartHoldDuration == 1)
+        let crossingZero = LineCubeMotion.forwardInterpolatedRotationDegrees(
             from: 350,
             to: 10,
             progress: 0.5
         )
+        let longRoute = LineCubeMotion.forwardInterpolatedRotationDegrees(
+            from: 10,
+            to: 350,
+            progress: 0.5
+        )
+        let fullTurn = LineCubeMotion.forwardInterpolatedRotationDegrees(
+            from: 0,
+            to: 0,
+            progress: 0.5
+        )
 
-        #expect(abs(halfway - 360) < 0.001)
+        #expect(abs(crossingZero - 360) < 0.001)
+        #expect(abs(longRoute - 180) < 0.001)
+        #expect(abs(fullTurn - 180) < 0.001)
     }
 
-    @Test("Heart lines double-beat after formation")
-    func heartPulseTiming() {
-        let beforeFormation = LineCubeMotion.heartPulse(
-            elapsed: nil,
-            reduceMotion: false
+    @Test("Heart lights up once after formation")
+    func heartGlowTiming() {
+        let beforeFormation = LineCubeMotion.heartGlow(elapsed: nil)
+        let forming = LineCubeMotion.heartGlow(
+            elapsed: LineCubeMotion.heartFormationDuration - 0.01
         )
-        let arrived = LineCubeMotion.heartPulse(
-            elapsed: LineCubeMotion.heartFormationDuration,
-            reduceMotion: false
-        )
-        let primaryBeat = LineCubeMotion.heartPulse(
-            elapsed: LineCubeMotion.heartFormationDuration + 0.20,
-            reduceMotion: false
-        )
-        let betweenBeats = LineCubeMotion.heartPulse(
-            elapsed: LineCubeMotion.heartFormationDuration + 0.34,
-            reduceMotion: false
-        )
-        let secondaryBeat = LineCubeMotion.heartPulse(
+        let arrived = LineCubeMotion.heartGlow(
             elapsed: LineCubeMotion.heartFormationDuration
-                + 0.44,
-            reduceMotion: false
         )
-        let reducedMotion = LineCubeMotion.heartPulse(
-            elapsed: 0,
-            reduceMotion: true
+        let held = LineCubeMotion.heartGlow(
+            elapsed: LineCubeMotion.heartFormationDuration + 0.8
         )
 
         #expect(beforeFormation == .idle)
-        #expect(arrived == .idle)
-        #expect(primaryBeat.emphasis > betweenBeats.emphasis)
-        #expect(secondaryBeat.emphasis > betweenBeats.emphasis)
-        #expect(reducedMotion == .idle)
+        #expect(forming == .idle)
+        #expect(arrived.emphasis > 0)
+        #expect(arrived == held)
     }
 
     private func mirroredRotation(_ rotation: Double) -> Double {

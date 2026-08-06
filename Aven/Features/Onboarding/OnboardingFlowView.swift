@@ -669,9 +669,6 @@ struct OnboardingFlowView: View {
                 return
             }
             AvenHaptics.shared.stopContinuousHeartFormation()
-            AvenHaptics.shared.playStrongHeartPulses(
-                duration: LineCubeMotion.heartHoldDuration
-            )
         }
     }
 
